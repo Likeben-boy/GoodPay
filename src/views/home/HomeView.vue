@@ -75,9 +75,9 @@ const activeTab = ref(0)
 
 // 轮播图数据
 const banners = ref([
-  { id: 1, image: '/images/banner1.jpg', title: '新用户专享优惠' },
-  { id: 2, image: '/images/banner2.jpg', title: '限时折扣活动' },
-  { id: 3, image: '/images/banner3.jpg', title: '热门餐厅推荐' }
+  { id: 1, image: new URL('@/assets/images/banner1.jpg', import.meta.url).href, title: '新用户专享优惠' },
+  { id: 2, image: new URL('@/assets/images/banner2.webp', import.meta.url).href, title: '限时折扣活动' },
+  { id: 3, image: new URL('@/assets/images/banner3.jpg', import.meta.url).href, title: '热门餐厅推荐' }
 ])
 
 // 分类数据

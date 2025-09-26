@@ -150,7 +150,7 @@ const goToOrders = (status) => {
 
 // 跳转到收货地址
 const goToAddress = () => {
-  showToast('功能开发中...')
+  router.push('/user/address')
 }
 
 // 跳转到收藏

@@ -13,7 +13,7 @@ const routes = [
   {
     path: '/restaurant/:id',
     name: 'RestaurantDetail',
-    component: () => import('@/views/restaurant/Detail.vue'),
+    component: () => import('@/views/restaurant/RestaurantView.vue'),
     meta: {
       title: '餐厅详情'
     }
@@ -46,11 +46,56 @@ const routes = [
     }
   },
   {
+    path: '/order/checkout',
+    name: 'OrderCheckout',
+    component: () => import('@/views/order/OrderCheckout.vue'),
+    meta: {
+      title: '订单结算',
+      requireAuth: true
+    }
+  },
+  {
+    path: '/order/success',
+    name: 'OrderSuccess',
+    component: () => import('@/views/order/OrderSuccess.vue'),
+    meta: {
+      title: '订单成功',
+      requireAuth: true
+    }
+  },
+  {
     path: '/user',
     name: 'UserProfile',
     component: () => import('@/views/user/Profile.vue'),
     meta: {
       title: '个人中心',
+      requireAuth: true
+    }
+  },
+  {
+    path: '/user/address',
+    name: 'AddressList',
+    component: () => import('@/views/user/AddressList.vue'),
+    meta: {
+      title: '收货地址',
+      requireAuth: true
+    }
+  },
+  {
+    path: '/user/address/add',
+    name: 'AddressAdd',
+    component: () => import('@/views/user/AddressEdit.vue'),
+    meta: {
+      title: '添加地址',
+      requireAuth: true
+    }
+  },
+  {
+    path: '/user/address/edit/:id',
+    name: 'AddressEdit',
+    component: () => import('@/views/user/AddressEdit.vue'),
+    meta: {
+      title: '编辑地址',
       requireAuth: true
     }
   },
