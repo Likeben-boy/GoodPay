@@ -1,0 +1,315 @@
+/* 通用样式和布局 */
+
+/* 页面容器 */
+.page-container {
+  min-height: 100vh;
+  background: var(--background-color);
+  padding-bottom: 50px; /* 底部导航栏高度 */
+}
+
+.content-wrapper {
+  padding: 16px;
+}
+
+/* 卡片样式 */
+.card {
+  background: var(--white);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.card-subtitle {
+  font-size: 14px;
+  color: var(--text-color-light);
+  margin: 0;
+}
+
+/* 列表样式 */
+.list-item {
+  background: var(--white);
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+.list-item-content {
+  flex: 1;
+}
+
+.list-item-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.list-item-desc {
+  font-size: 14px;
+  color: var(--text-color-light);
+}
+
+.list-item-extra {
+  color: var(--text-color-light);
+  font-size: 14px;
+}
+
+/* 按钮样式 */
+.btn-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-group .van-button {
+  flex: 1;
+}
+
+/* 表单样式 */
+.form-section {
+  background: var(--white);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.form-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+/* 标签样式 */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
+.tag-primary {
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--primary-color);
+}
+
+.tag-success {
+  background: rgba(0, 184, 148, 0.1);
+  color: var(--success-color);
+}
+
+.tag-warning {
+  background: rgba(249, 202, 36, 0.1);
+  color: var(--warning-color);
+}
+
+.tag-error {
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--error-color);
+}
+
+/* 价格样式 */
+.price {
+  color: var(--error-color);
+  font-weight: 600;
+}
+
+.price::before {
+  content: '¥';
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.price-old {
+  color: var(--text-color-light);
+  text-decoration: line-through;
+  font-size: 14px;
+  font-weight: normal;
+  margin-left: 4px;
+}
+
+/* 评分样式 */
+.rating {
+  color: #ffb800;
+  font-size: 14px;
+}
+
+.rating .van-icon {
+  font-size: 14px;
+}
+
+/* 图片样式 */
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--background-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-light);
+  font-size: 14px;
+}
+
+/* 状态标签 */
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-pending {
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--error-color);
+}
+
+.status-processing {
+  background: rgba(69, 183, 209, 0.1);
+  color: var(--info-color);
+}
+
+.status-completed {
+  background: rgba(0, 184, 148, 0.1);
+  color: var(--success-color);
+}
+
+.status-cancelled {
+  background: rgba(149, 165, 166, 0.1);
+  color: var(--text-color-light);
+}
+
+/* 加载更多 */
+.load-more {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-color-light);
+  font-size: 14px;
+}
+
+.load-more .van-button {
+  min-width: 120px;
+}
+
+/* 分割线 */
+.divider {
+  height: 8px;
+  background: var(--background-color);
+}
+
+/* 底部安全区域 */
+.safe-area-bottom {
+  height: env(safe-area-inset-bottom);
+  background: var(--white);
+}
+
+/* 响应式图片 */
+.responsive-image {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.contain-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 骨架屏样式 */
+.skeleton {
+  background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 固定底部操作栏 */
+.bottom-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  padding: 16px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #bbb;
+}
+
+/* 遮罩层 */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* 加载动画 */
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
