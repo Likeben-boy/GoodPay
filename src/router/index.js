@@ -108,6 +108,14 @@ const routes = [
     }
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/user/Register.vue'),
+    meta: {
+      title: '注册'
+    }
+  },
+  {
     path: '/payment/:orderId',
     name: 'Payment',
     component: () => import('@/views/order/Payment.vue'),
@@ -124,24 +132,19 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   // 设置页面标题
   if (to.meta.title) {
     document.title = `${to.meta.title} - GoodPay`
   }
 
-  // TODO 权限验证 等待后段接口
-  // if (to.meta.requireAuth) {
-  //   const token = localStorage.getItem('token')
-  //   if (!token) {
-  //     next('/login')
-  //   } else {
-  //     next()
-  //   }
-  // } else {
-  //   next()
-  // }
-  next();
+  //跳转登陆
+  if (to.meta.requireAuth) {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      return '/login'
+    }
+  }
 })
 
 export default router

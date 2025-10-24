@@ -2,20 +2,20 @@ import { request } from '@/utils/request'
 
 export const authApi = {
   // 用户登录
-  login: (data) => request.post('/auth/login', data),
+  login: (data) => request.post('/users/login', data),
 
   // 用户注册
-  register: (data) => request.post('/auth/register', data),
+  register: (data) => request.post('/users/register', data),
 
   // 发送验证码
-  sendCode: (phone) => request.post('/auth/send-code', { phone }),
+  sendCode: (phone) => request.post('/users/send-code', { phone }),
 
   // 验证码登录
-  codeLogin: (data) => request.post('/auth/code-login', data),
+  codeLogin: (data) => request.post('/users/code-login', data),
 
   // 刷新token
-  refreshToken: (refreshToken) => request.post('/auth/refresh-token', { refreshToken }),
+  refreshToken: (refreshToken) => request.post('/users/refresh-token', { refreshToken }),
 
   // 退出登录
-  logout: () => request.post('/auth/logout')
+  logout: () => request.post('/users/logout')
 }

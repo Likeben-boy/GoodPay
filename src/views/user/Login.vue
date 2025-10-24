@@ -99,7 +99,7 @@ import { useUserStore } from '@/store/user'
 const router = useRouter()
 const userStore = useUserStore()
 
-const activeTab = ref('phone')
+const activeTab = ref('password')
 const countdown = ref(0)
 
 // 手机登录表单
@@ -195,8 +195,7 @@ const alipayLogin = () => {
 
 // 跳转到注册页面
 const goToRegister = () => {
-  showToast('跳转到注册页面')
-  // TODO: 实现注册页面
+  router.push('/register')
 }
 </script>
 

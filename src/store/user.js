@@ -6,56 +6,16 @@ export const useUserStore = defineStore('user', () => {
   const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
   const isLoggedIn = computed(() => !!token.value)
 
-  // 登录
-  const login = async (credentials) => {
-    try {
-      // TODO: 调用登录API
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(credentials)
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        token.value = data.token
-        userInfo.value = data.user
-        localStorage.setItem('token', data.token)
-        localStorage.setItem('userInfo', JSON.stringify(data.user))
-        return { success: true }
-      }
-      return { success: false, message: data.message }
-    } catch (error) {
-      return { success: false, message: '登录失败' }
-    }
-  }
-
-  // 注册
-  const register = async (userData) => {
-    try {
-      // TODO: 调用注册API
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(userData)
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        return { success: true }
-      }
-      return { success: false, message: data.message }
-    } catch (error) {
-      return { success: false, message: '注册失败' }
-    }
+  // 保存用户数据
+  const saveUser = async (userResponse) => {
+        token.value = userResponse.token
+        userInfo.value = userResponse.user
+        localStorage.setItem('token', userResponse.token)
+        localStorage.setItem('userInfo', JSON.stringify(userResponse.user))
   }
 
   // 登出
-  const logout = () => {
+  const deleteUser = () => {
     token.value = ''
     userInfo.value = {}
     localStorage.removeItem('token')
@@ -72,9 +32,8 @@ export const useUserStore = defineStore('user', () => {
     token,
     userInfo,
     isLoggedIn,
-    login,
-    register,
-    logout,
+    saveUser,
+    deleteUser,
     updateUserInfo
   }
 })
