@@ -117,16 +117,28 @@ const onAreaConfirm = ({ selectedOptions }) => {
   showAreaPicker.value = false
 }
 
+//新增调用api
   const addAddressApi = async () =>{
   try {
     await addressApi.addAddress(formData.value);
+    showToast('地址添加成功')
   } catch (error) {
     showToast(error.message || "添加失败，请重试");
   }
   }
 
+  //编辑地址调用api
+  const updateAddressApi = async ()=>{
+      try {
+    await addressApi.updateAddress(props.addressData.id, formData.value);
+    showToast('地址更新成功')
+  } catch (error) {
+    showToast(error.message || "更新失败，请重试");
+  }
+  }
+
 // 保存地址
-const saveAddress = () => {
+const saveAddress = async () => {
   // 验证表单
   if (!formData.value.contactName) {
     showToast('请输入收货人姓名')
@@ -153,19 +165,15 @@ const saveAddress = () => {
     return
   }
 
-  // 调用API保存地址
-  if (isEdit.value) {
+    // 调用API保存地址
+    if (isEdit.value) {
+      await updateAddressApi()
+    } else {
+      await addAddressApi()
+    }
 
-    showToast('地址更新成功')
-  } else {
-    addAddressApi();
-    // console.log('tianjia',formData.value);
-    
-    showToast('地址添加成功')
-  }
-
-  // 返回地址列表
-  // router.back()
+    // 返回地址列表
+    router.back()
 }
 
 // 返回

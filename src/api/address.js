@@ -7,15 +7,9 @@ export const addressApi = {
   // 新增地址
   addAddress: (data) => request.post('/users/addresses', data),
 
-  // 发送验证码
-  sendCode: (phone) => request.post('/users/send-code', { phone }),
+  // 更新地址
+  updateAddress: (addressId, data) => request.put(`/users/addresses/${addressId}`, data),
 
-  // 验证码登录
-  codeLogin: (data) => request.post('/users/code-login', data),
-
-  // 刷新token
-  refreshToken: (refreshToken) => request.post('/users/refresh-token', { refreshToken }),
-
-  // 退出登录
-  logout: () => request.post('/users/logout')
+  // 删除地址
+  deleteAddress: (addressId) => request.delete(`/users/addresses/${addressId}`),
 }

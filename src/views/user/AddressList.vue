@@ -48,9 +48,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onActivated, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { addressApi } from '@/api/address'
+
+// 定义组件名称，供 keep-alive 使用
+defineOptions({
+  name: 'AddressList'
+})
 
 const router = useRouter()
 const route = useRoute()
@@ -95,16 +100,21 @@ const editAddress = (address) => {
 }
 
 // 删除地址
-const deleteAddress = (address) => {
+const deleteAddress = async (address) => {
   showConfirmDialog({
     title: '删除地址',
     message: '确定要删除这个收货地址吗？',
   })
-    .then(() => {
-      const index = addresses.value.findIndex(a => a.id === address.id)
-      if (index > -1) {
-        addresses.value.splice(index, 1)
-        showToast('删除成功')
+    .then(async () => {
+      try {
+        await addressApi.deleteAddress(address.id)
+        const index = addresses.value.findIndex(a => a.id === address.id)
+        if (index > -1) {
+          addresses.value.splice(index, 1)
+          showToast('删除成功')
+        }
+      } catch (error) {
+        showToast(error.message || "删除失败，请重试")
       }
     })
     .catch(() => {
@@ -126,7 +136,6 @@ const goBack = () => {
 const addressListApi = async () => {
   try {
     const result = await addressApi.addressList();
-    //存入登陆信息
     addresses.value = result.data
   } catch (error) {
     showToast(error.message || "查询失败，请重试");
@@ -134,7 +143,8 @@ const addressListApi = async () => {
 };
 
 
-onMounted( () => {
+onMounted(() => {
+  console.log('AddressList onMounted triggered')
   addressListApi();
 })
 </script>
