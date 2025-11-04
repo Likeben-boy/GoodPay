@@ -24,8 +24,8 @@
         >
           <div class="address-header">
             <div class="contact-info">
-              <span class="name">{{ address.name }}</span>
-              <span class="phone">{{ address.phone }}</span>
+              <span class="name">{{ address.contactName }}</span>
+              <span class="phone">{{ address.contactPhone }}</span>
               <span v-if="address.isDefault" class="default-tag">默认</span>
             </div>
             <div class="address-actions">
@@ -51,6 +51,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
+import { addressApi } from '@/api/address'
 
 const router = useRouter()
 const route = useRoute()
@@ -59,23 +60,13 @@ const route = useRoute()
 const addresses = ref([
   {
     id: 1,
-    name: '张三',
-    phone: '138****5678',
+    contactName: '张三',
+    contactPhone: '138****5679',
     province: '北京市',
     city: '朝阳区',
     district: '三里屯街道',
-    detail: '工体北路8号院1号楼1单元101室',
+    detailAddress: '工体北路8号院1号楼1单元101室',
     isDefault: true
-  },
-  {
-    id: 2,
-    name: '李四',
-    phone: '139****1234',
-    province: '北京市',
-    city: '海淀区',
-    district: '中关村街道',
-    detail: '中关村大街1号院2号楼2单元202室',
-    isDefault: false
   }
 ])
 
@@ -120,8 +111,19 @@ const goBack = () => {
   router.back()
 }
 
+// 手机验证码登录
+const onPhoneLogin = async () => {
+  try {
+    const result = await addressApi.addressList();
+    //存入登陆信息
+    addresses.value = result.data
+  } catch (error) {
+    showToast(error.message || "查询失败，请重试");
+  }
+};
+
 onMounted(() => {
-  // TODO: 加载地址列表
+  onPhoneLogin();
 })
 </script>
 

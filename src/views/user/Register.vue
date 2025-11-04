@@ -85,7 +85,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showSuccessToast, showDialog } from 'vant'
-import  useUserStore  from '@/store/user'
+import  {useUserStore}  from '@/store/user'
 import { authApi } from '@/api'
 
 const router = useRouter()
@@ -150,16 +150,11 @@ const onRegister = async () => {
       authCode: registerForm.authCode,
       password: registerForm.password
     })
-
-    if (result.success) {
       showSuccessToast('注册成功')
       userStore.saveUser(result);
       router.replace('/')
-    } else {
-      showToast(result.message || '注册失败')
-    }
   } catch (error) {
-    showToast('注册失败，请重试')
+    showToast(error.message ||'注册失败，请重试')
   }
 }
 

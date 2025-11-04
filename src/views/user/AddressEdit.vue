@@ -74,6 +74,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
+import { areaList } from '@vant/area-data';
 
 const router = useRouter()
 const route = useRoute()
@@ -99,41 +100,6 @@ const areaText = computed(() => {
     return `${province} ${city} ${district}`
   }
   return ''
-})
-
-// 模拟地区数据
-const areaList = ref({
-  province_list: {
-    '110000': '北京市',
-    '310000': '上海市',
-    '440000': '广东省',
-    '330000': '浙江省'
-  },
-  city_list: {
-    '110100': '北京市',
-    '310100': '上海市',
-    '440100': '广州市',
-    '440300': '深圳市',
-    '330100': '杭州市'
-  },
-  county_list: {
-    '110101': '东城区',
-    '110102': '西城区',
-    '110105': '朝阳区',
-    '110106': '丰台区',
-    '310101': '黄浦区',
-    '310104': '徐汇区',
-    '310105': '长宁区',
-    '310106': '静安区',
-    '440103': '荔湾区',
-    '440104': '越秀区',
-    '440106': '天河区',
-    '440305': '南山区',
-    '330102': '上城区',
-    '330103': '下城区',
-    '330104': '江干区',
-    '330105': '拱墅区'
-  }
 })
 
 // 地区选择确认
