@@ -64,7 +64,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast } from 'vant'
 import { formatDistance } from '@/utils'
 
 const route = useRoute()

@@ -50,7 +50,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { showToast, showConfirmDialog } from 'vant'
 import { addressApi } from '@/api/address'
 
 const router = useRouter()
@@ -80,7 +79,19 @@ const selectAddress = (address) => {
 
 // 编辑地址
 const editAddress = (address) => {
-  router.push(`/user/address/edit/${address.id}`)
+  router.push({
+    name: 'AddressEdit',
+    query: {
+      id: address.id,
+      contactName: address.contactName,
+      contactPhone: address.contactPhone,
+      province: address.province,
+      city: address.city,
+      district: address.district,
+      detailAddress: address.detailAddress,
+      isDefault: address.isDefault
+    }
+  })
 }
 
 // 删除地址
@@ -111,8 +122,8 @@ const goBack = () => {
   router.back()
 }
 
-// 手机验证码登录
-const onPhoneLogin = async () => {
+// 查询地址列表
+const addressListApi = async () => {
   try {
     const result = await addressApi.addressList();
     //存入登陆信息
@@ -122,8 +133,9 @@ const onPhoneLogin = async () => {
   }
 };
 
-onMounted(() => {
-  onPhoneLogin();
+
+onMounted( () => {
+  addressListApi();
 })
 </script>
 

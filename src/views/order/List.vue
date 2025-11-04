@@ -78,7 +78,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
 
 const router = useRouter()
 const activeStatus = ref('all')

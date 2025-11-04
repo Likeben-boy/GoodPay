@@ -10,6 +10,14 @@ class HttpError extends Error{
     this.message = message;
   }
 }
+    // 辅助函数：从 errors 数组生成错误消息
+  function generateErrorMessage(errors) {
+    console.log(errors);
+    
+  return Array.isArray(errors)
+    ? errors.map(error => error.message).join('; ')
+    : '校验错误';
+}
 
 //校验错误
 class ValidationError extends HttpError {
@@ -19,15 +27,6 @@ class ValidationError extends HttpError {
     this.status = status;
     this.errors = errors;
   }
-
-    // 辅助函数：从 errors 数组生成错误消息
-  generateErrorMessage(errors) {
-    console.log(errors);
-    
-  return Array.isArray(errors)
-    ? errors.map(error => error.message).join('; ')
-    : '校验错误';
-}
 }
 
 //token超时

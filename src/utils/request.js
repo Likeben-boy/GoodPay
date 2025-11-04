@@ -136,6 +136,8 @@ class HttpRequest {
           const duration = Date.now() - startTime;
 
           if (!response.ok) {
+            
+            
             const errorData = await response.json().catch(() => ({}));
             let error;
             //根据错误码判断是什么错误
@@ -147,17 +149,19 @@ class HttpRequest {
 
               //如果是token超时，则重新调用刷新token的接口并重新按照相同的参数重新发送一次接口
               case "TIME_OUT_TOKEN":
+                console.log('是否进入3',errorData.code);
                 error = new TimeOutTokenError(options);
                 break;
 
               default:
+                console.log('是否进入4',errorData.code);
                 error = new HttpError(
                   errorData.code,
                   errorData.message ||
                     `HTTP ${(response.status, errorData.status)}`
-                );
-                break;
+                )
             }
+            
             logger.error(url, error, errorData, duration);
             throw error;
           }

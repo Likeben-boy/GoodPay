@@ -91,9 +91,21 @@ const routes = [
     }
   },
   {
-    path: '/user/address/edit/:id',
+    path: '/user/address/edit',
     name: 'AddressEdit',
     component: () => import('@/views/user/AddressEdit.vue'),
+    props: (route) => ({
+      addressData: {
+        id: route.query.id,
+        contactName: route.query.contactName,
+        contactPhone: route.query.contactPhone,
+        province: route.query.province,
+        city: route.query.city,
+        district: route.query.district,
+        detailAddress: route.query.detailAddress,
+        isDefault: route.query.isDefault === 'true'
+      }
+    }),
     meta: {
       title: '编辑地址',
       requireAuth: true

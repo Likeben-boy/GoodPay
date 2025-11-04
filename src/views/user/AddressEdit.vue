@@ -16,13 +16,13 @@
       <van-form @submit="saveAddress">
         <van-cell-group inset>
           <van-field
-            v-model="formData.name"
+            v-model="formData.contactName"
             label="收货人"
             placeholder="请输入收货人姓名"
             :rules="[{ required: true, message: '请输入收货人姓名' }]"
           />
           <van-field
-            v-model="formData.phone"
+            v-model="formData.contactPhone"
             label="手机号"
             type="tel"
             placeholder="请输入手机号"
@@ -39,7 +39,7 @@
             @click="showAreaPicker = true"
           />
           <van-field
-            v-model="formData.detail"
+            v-model="formData.detailAddress"
             label="详细地址"
             type="textarea"
             placeholder="请输入详细地址（街道、门牌号等）"
@@ -72,24 +72,31 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { showToast } from 'vant'
+import { useRouter } from 'vue-router'
 import { areaList } from '@vant/area-data';
+import { addressApi } from '@/api/address';
 
 const router = useRouter()
-const route = useRoute()
 
-const isEdit = computed(() => route.params.id !== undefined)
+// 接收路由传递的地址数据
+const props = defineProps({
+  addressData: {
+    type: Object,
+    default: null
+  }
+})
+
+const isEdit = computed(() => !!props.addressData?.id)
 const showAreaPicker = ref(false)
 
 // 表单数据
 const formData = ref({
-  name: '',
-  phone: '',
+  contactName: '',
+  contactPhone: '',
   province: '',
   city: '',
   district: '',
-  detail: '',
+  detailAddress: '',
   isDefault: false
 })
 
@@ -110,20 +117,28 @@ const onAreaConfirm = ({ selectedOptions }) => {
   showAreaPicker.value = false
 }
 
+  const addAddressApi = async () =>{
+  try {
+    await addressApi.addAddress(formData.value);
+  } catch (error) {
+    showToast(error.message || "添加失败，请重试");
+  }
+  }
+
 // 保存地址
 const saveAddress = () => {
   // 验证表单
-  if (!formData.value.name) {
+  if (!formData.value.contactName) {
     showToast('请输入收货人姓名')
     return
   }
 
-  if (!formData.value.phone) {
+  if (!formData.value.contactPhone) {
     showToast('请输入手机号')
     return
   }
 
-  if (!/^1[3-9]\d{9}$/.test(formData.value.phone)) {
+  if (!/^1[3-9]\d{9}$/.test(formData.value.contactPhone)) {
     showToast('请输入正确的手机号')
     return
   }
@@ -133,20 +148,24 @@ const saveAddress = () => {
     return
   }
 
-  if (!formData.value.detail) {
+  if (!formData.value.detailAddress) {
     showToast('请输入详细地址')
     return
   }
 
-  // TODO: 调用API保存地址
+  // 调用API保存地址
   if (isEdit.value) {
+
     showToast('地址更新成功')
   } else {
+    addAddressApi();
+    // console.log('tianjia',formData.value);
+    
     showToast('地址添加成功')
   }
 
   // 返回地址列表
-  router.back()
+  // router.back()
 }
 
 // 返回
@@ -156,19 +175,17 @@ const goBack = () => {
 
 onMounted(() => {
   // 如果是编辑模式，加载地址数据
-  if (isEdit.value) {
-    const addressId = route.params.id
-    // TODO: 根据ID加载地址数据
-    // 这里使用模拟数据
-    formData.value = {
-      name: '张三',
-      phone: '138****5678',
-      province: '北京市',
-      city: '朝阳区',
-      district: '三里屯街道',
-      detail: '工体北路8号院1号楼1单元101室',
-      isDefault: true
-    }
+  if (props.addressData) {
+    // 将props数据复制到本地表单
+    Object.assign(formData.value, {
+      contactName: props.addressData.contactName,
+      contactPhone: props.addressData.contactPhone,
+      province: props.addressData.province,
+      city: props.addressData.city,
+      district: props.addressData.district,
+      detailAddress: props.addressData.detailAddress,
+      isDefault: props.addressData.isDefault
+    })
   }
 })
 </script>
