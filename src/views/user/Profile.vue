@@ -1,13 +1,13 @@
 <template>
   <div class="profile">
-    <!-- 顶部导航 -->
-    <van-nav-bar title="个人中心" left-arrow @click-left="goBack" />
+    <!-- 顶部导航在三大标签页主页面时不需要导航栏 -->
+    <!-- <van-nav-bar title="个人中心" left-arrow @click-left="goBack" /> -->
 
     <!-- 用户信息 -->
     <div class="user-section">
       <div class="user-info">
         <div class="avatar-container">
-          <img :src="userInfo.avatar" :alt="userInfo.nickname" class="avatar" />
+          <img :src="userInfo.avatar" :alt="userInfo.username" class="avatar" />
           <div class="avatar-edit" @click="editAvatar">
             <van-icon name="photograph" size="12" />
           </div>
@@ -108,15 +108,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/store/user'
 
 const router = useRouter()
+const userStore = useUserStore();
 
 // 用户信息
-const userInfo = ref({
-  nickname: '美食达人',
-  phone: '138****5678',
-  avatar: '/images/avatar-default.jpg'
-})
+const userInfo = ref(userStore.userInfo)
 
 // 订单统计
 const orderStats = ref({
