@@ -4,6 +4,9 @@ export const restaurantApi = {
   // 获取餐厅列表
   getRestaurantList: (params) => request.get('/restaurants', params),
 
+  //获取标签页面
+  getRestaurantTag: (params) => request.get('/restaurants/tags',params),
+
   // 获取餐厅详情
   getRestaurantDetail: (id) => request.get(`/restaurants/${id}`),
 
@@ -12,9 +15,6 @@ export const restaurantApi = {
 
   // 获取餐厅菜品列表
   getRestaurantDishes: (restaurantId, params) => request.get(`/restaurants/${restaurantId}/dishes`, params),
-
-  // 搜索餐厅
-  searchRestaurants: (keyword, params) => request.get('/restaurants/search', { keyword, ...params }),
 
   // 获取餐厅评价列表
   getRestaurantReviews: (restaurantId, params) => request.get(`/restaurants/${restaurantId}/reviews`, params),

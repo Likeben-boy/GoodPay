@@ -19,6 +19,29 @@ const routes = [
     }
   },
   {
+    path: '/restaurant/list',
+    name: 'RestaurantList',
+    component: () => import('@/views/restaurant/RestaurantList.vue'),
+    props: (route) => ({
+      operation: {
+        page: route.query.page,
+        limit: route.query.limit,
+
+        //标签
+        tags: route.query.tags,
+
+        //评分最小值
+        minRating: route.query.minRating,
+
+        //搜索关键字
+        keyword: route.query.keyword,
+      }
+    }),
+    meta: {
+      title: '餐厅列表'
+    }
+  },
+  {
     path: '/order',
     name: 'OrderList',
     component: () => import('@/views/order/List.vue'),

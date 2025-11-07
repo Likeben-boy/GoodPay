@@ -40,14 +40,14 @@ export const PAYMENT_METHODS_MAP = {
 
 // 餐厅分类
 export const RESTAURANT_CATEGORIES = [
-  { id: 1, name: '中餐', icon: 'restaurant-o' },
-  { id: 2, name: '西餐', icon: 'restaurant' },
-  { id: 3, name: '日料', icon: 'fish' },
-  { id: 4, name: '韩料', icon: 'fire-o' },
-  { id: 5, name: '快餐', icon: 'clock-o' },
-  { id: 6, name: '饮品', icon: 'cup-o' },
-  { id: 7, name: '甜点', icon: 'cake-o' },
-  { id: 8, name: '火锅', icon: 'hot-o' }
+  { id: 1, tagName: '中餐', icon: 'fire-o' },
+  { id: 2, tagName: '西餐', icon: 'flower-o' },
+  { id: 3, tagName: '日料', icon: 'gift-card-o' },
+  { id: 4, tagName: '韩料', icon: 'like-o' },
+  { id: 5, tagName: '快餐', icon: 'clock-o' },
+  { id: 6, tagName: '饮品', icon: 'filter-o' },
+  { id: 7, tagName: '甜点', icon: 'birthday-cake-o' },
+  { id: 8, tagName: '火锅', icon: 'hot-o' }
 ]
 
 // 退款原因
@@ -65,16 +65,6 @@ export const STORAGE_KEYS = {
   CART: 'cart',
   SEARCH_HISTORY: 'searchHistory',
   FAVORITE_RESTAURANTS: 'favoriteRestaurants'
-}
-
-// API 错误码
-export const ERROR_CODES = {
-  SUCCESS: 200,
-  UNAUTHORIZED: 401,
-  FORBIDDEN: 403,
-  NOT_FOUND: 404,
-  SERVER_ERROR: 500,
-  VALIDATION_ERROR: 422
 }
 
 // 分页配置
