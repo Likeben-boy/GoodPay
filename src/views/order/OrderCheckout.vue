@@ -201,7 +201,8 @@ const orderItems = computed(() => cartStore.items)
 
 // 配送时间选项 - 动态生成
 const deliveryTimeOptions = ref([])
-const selectedDeliveryTime = ref('立即送达')
+const selectedDeliveryTime = ref('立即送达') // 显示给用户看的文本
+const deliveryTimeParam = ref('立即送达') // 实际提交给后端的参数
 
 // 生成配送时间选项
 const generateDeliveryTimeOptions = () => {
@@ -260,6 +261,9 @@ const initDeliveryTimeOptions = () => {
   // 默认选择第一个可用时间
   if (deliveryTimeOptions.value.length > 0) {
     selectedDeliveryTime.value = deliveryTimeOptions.value[0].text
+    deliveryTimeParam.value = deliveryTimeOptions.value[0].value === 'immediate'
+      ? '立即送达'
+      : deliveryTimeOptions.value[0].value.split('-')[1]
   }
 }
 
@@ -294,6 +298,15 @@ const onAddressSelect = (selectedAddr) => {
 const selectDeliveryTime = (option) => {
   selectedDeliveryTime.value = option.text
   showTimePicker.value = false
+
+  // 设置实际提交给后端的参数
+  if (option.value === 'immediate') {
+    deliveryTimeParam.value = '立即送达'
+  } else {
+    // 如果是时间范围，取开始时间作为参数
+    const endTime = option.value.split('-')[0]
+    deliveryTimeParam.value = endTime
+  }
 }
 
 // 提交订单
@@ -313,7 +326,7 @@ const submitOrder = () => {
     addressId: address.value.id,
     items: cartStore.items,
     paymentMethod: selectedPayment.value,
-    deliveryTime: selectedDeliveryTime.value,
+    deliveryTime: deliveryTimeParam.value,
     note: orderNote.value,
     subtotal: cartStore.totalPrice,
     deliveryFee: restaurant.value.deliveryFee,
@@ -321,16 +334,16 @@ const submitOrder = () => {
   }
 
   showToast('订单提交成功！')
-  console.log('提交订单数据:', orderData)
+  console.log('提交订单数据:', JSON.stringify(orderData))
 
   // TODO: 调用后端API提交订单
   // 清空购物车
-  cartStore.clearCart()
+  // cartStore.clearCart()
 
   // 跳转到订单详情页面
-  setTimeout(() => {
-    router.push('/order/success')
-  }, 1500)
+  // setTimeout(() => {
+  //   router.push('/order/success')
+  // }, 1500)
 }
 
 // 加载餐厅信息
@@ -422,7 +435,7 @@ onMounted(async () => {
 .order-checkout {
   min-height: 100vh;
   background: #f5f5f5;
-  padding-bottom: 80px;
+  padding-bottom: 130px; /* 80px + 50px 导航栏高度 */
 }
 
 
@@ -621,7 +634,7 @@ onMounted(async () => {
 
 .checkout-footer {
   position: fixed;
-  bottom: 0;
+  bottom: 50px; /* 在导航栏上方，van-tabbar通常高度为50px */
   left: 0;
   right: 0;
   background: white;
@@ -630,6 +643,7 @@ onMounted(async () => {
   justify-content: space-between;
   padding: 16px;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
 }
 
 .price-summary {

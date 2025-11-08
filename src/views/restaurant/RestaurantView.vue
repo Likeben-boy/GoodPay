@@ -34,18 +34,20 @@
           :key="category.id"
           class="category-item"
           :class="{ active: activeCategory === category.id }"
-          @click="activeCategory = category.id"
+          @click="scrollToCategory(category.id)"
         >
           {{ category.name }}
         </div>
       </div>
 
       <!-- 右侧菜品列表 -->
-      <div class="dish-content">
+      <div class="dish-content" ref="dishContent" @scroll="handleScroll">
         <div
           v-for="category in dishCategories"
           :key="category.id"
           class="category-section"
+          :id="'category-' + category.id"
+          ref="categorySections"
         >
           <h3 class="category-title">{{ category.name }}</h3>
           <div class="dish-list">
@@ -130,7 +132,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, nextTick, watch } from "vue";
 import { useRouter } from "vue-router";
 import CartPopup from "@/components/CartPopup.vue";
 import DishDetail from "@/components/DishDetail.vue";
@@ -150,6 +152,11 @@ const activeCategory = ref(1);
 const showCart = ref(false);
 const showDishPopup = ref(false);
 const selectedDish = ref(null);
+
+// 滚动相关的引用
+const dishContent = ref(null);
+const categorySections = ref([]);
+const categoryOffsets = ref([]);
 
 // 餐厅数据
 const restaurant = ref({
@@ -199,10 +206,43 @@ const dishCategories = ref([
         quantity: 0,
         categoryId: 1,
       },
+      {
+        id: 5,
+        name: "水煮鱼",
+        description: "麻辣鲜香，鱼肉嫩滑",
+        price: 58,
+        image: "/images/dish5.jpg",
+        quantity: 0,
+        categoryId: 1,
+      },
     ],
   },
   {
     id: 2,
+    name: "凉菜",
+    dishes: [
+      {
+        id: 6,
+        name: "凉拌黄瓜",
+        description: "清爽开胃，酸甜可口",
+        price: 12,
+        image: "/images/dish6.jpg",
+        quantity: 0,
+        categoryId: 2,
+      },
+      {
+        id: 7,
+        name: "口水鸡",
+        description: "麻辣鲜香，口感丰富",
+        price: 28,
+        image: "/images/dish7.jpg",
+        quantity: 0,
+        categoryId: 2,
+      },
+    ],
+  },
+  {
+    id: 3,
     name: "汤品",
     dishes: [
       {
@@ -212,12 +252,21 @@ const dishCategories = ref([
         price: 18,
         image: "/images/dish3.jpg",
         quantity: 0,
-        categoryId: 2,
+        categoryId: 3,
+      },
+      {
+        id: 8,
+        name: "冬瓜排骨汤",
+        description: "清淡营养，排骨鲜嫩",
+        price: 32,
+        image: "/images/dish8.jpg",
+        quantity: 0,
+        categoryId: 3,
       },
     ],
   },
   {
-    id: 3,
+    id: 4,
     name: "主食",
     dishes: [
       {
@@ -227,7 +276,40 @@ const dishCategories = ref([
         price: 15,
         image: "/images/dish4.jpg",
         quantity: 0,
-        categoryId: 3,
+        categoryId: 4,
+      },
+      {
+        id: 9,
+        name: "牛肉面",
+        description: "汤头浓郁，牛肉鲜嫩",
+        price: 25,
+        image: "/images/dish9.jpg",
+        quantity: 0,
+        categoryId: 4,
+      },
+    ],
+  },
+  {
+    id: 5,
+    name: "饮料",
+    dishes: [
+      {
+        id: 10,
+        name: "酸梅汤",
+        description: "酸甜解腻，生津止渴",
+        price: 8,
+        image: "/images/dish10.jpg",
+        quantity: 0,
+        categoryId: 5,
+      },
+      {
+        id: 11,
+        name: "可乐",
+        description: "经典碳酸饮料",
+        price: 6,
+        image: "/images/dish11.jpg",
+        quantity: 0,
+        categoryId: 5,
       },
     ],
   },
@@ -238,20 +320,53 @@ const loadDishCategories = async (id) => {
   try {
     const result = await restaurantApi.getRestaurantCategories({ id });
 
+    console.log('API返回的数据结构:', result);
+
     //把图片都加上nerURL
     result.data.image = new URL(result.data.image, import.meta.url).href;
     //把图片都加上nerURL
-    dishCategories.value = result.data.categories.map((item) => {      
+    dishCategories.value = result.data.categories.map((item) => {
       item.dishes = item.dishes.map((itemItem) => {
         // 直接使用接口返回的路径，因为路径是正确的
         itemItem.image = new URL(itemItem.image, import.meta.url).href;
-        itemItem.quantity = 0;
+
+        // 根据购物车中的实际数量设置菜品数量，而不是重置为0
+        const cartItem = cartStore.items.find(cartItem => cartItem.id === itemItem.id);
+        itemItem.quantity = cartItem ? cartItem.quantity : 0;
+
         return itemItem;
       });
+
       return item;
     });
+
+    console.log('处理后的菜品分类数据:', dishCategories.value);
+
+    // 数据加载完成后重新初始化分类偏移量
+    await nextTick();
+    // 使用多次延迟确保DOM完全渲染和计算完成
+    setTimeout(() => {
+      initCategoryOffsets();
+
+      // 再次延迟以确保样式应用完成
+      setTimeout(() => {
+        if (dishContent.value) {
+
+          // 如果内容高度仍然不足，强制触发重新计算
+          if (dishContent.value.scrollHeight <= dishContent.value.clientHeight) {
+            // 强制重新布局
+            dishContent.value.style.height = 'auto';
+            setTimeout(() => {
+              dishContent.value.style.height = '';
+              initCategoryOffsets();
+            }, 50);
+          }
+        }
+      }, 100);
+    }, 100); // 延迟一点时间确保DOM完全更新
   } catch (error) {
     showToast(error.message || "加载菜品分类查询失败，请重试");
+    console.error('加载菜品分类失败:', error);
   }
 };
 
@@ -259,6 +374,20 @@ const loadDishCategories = async (id) => {
 const cartItems = computed(() => cartStore.items);
 const totalQuantity = computed(() => cartStore.totalCount);
 const totalPrice = computed(() => cartStore.totalPrice);
+
+// 监听购物车变化，同步更新商品页面的数量
+watch(cartItems, (newCartItems) => {
+  dishCategories.value.forEach(category => {
+    category.dishes.forEach(dish => {
+      const cartItem = newCartItems.find(item => item.id === dish.id);
+      if (cartItem) {
+        dish.quantity = cartItem.quantity;
+      } else {
+        dish.quantity = 0;
+      }
+    });
+  });
+}, { deep: true });
 
 // 显示菜品详情
 const showDishDetail = (dish) => {
@@ -278,6 +407,12 @@ const addToCart = (dish) => {
     restaurantName: restaurant.value.name,
     categoryId: dish.categoryId
   });
+
+  // 同步更新商品页面的数量显示
+  const cartItem = cartStore.items.find(item => item.id === dish.id);
+  if (cartItem) {
+    dish.quantity = cartItem.quantity;
+  }
 };
 
 // 从购物车移除
@@ -285,14 +420,20 @@ const removeFromCart = (dish) => {
   const cartItem = cartStore.items.find(item => item.id === dish.id);
   if (cartItem && cartItem.quantity > 1) {
     cartStore.updateQuantity(dish.id, cartItem.quantity - 1);
+    // 同步更新商品页面的数量显示
+    dish.quantity = cartItem.quantity - 1;
   } else {
     cartStore.removeItem(dish.id);
+    // 同步更新商品页面的数量显示
+    dish.quantity = 0;
   }
 };
 
 // 删除菜品
 const deleteItem = (dish) => {
   cartStore.removeItem(dish.id);
+  // 同步更新商品页面的数量显示
+  dish.quantity = 0;
 };
 
 // 跳转到结算页面
@@ -314,6 +455,68 @@ const goBack = () => {
   router.back();
 };
 
+// 滚动到指定分类
+const scrollToCategory = (categoryId) => {
+  activeCategory.value = categoryId;
+  const element = document.getElementById(`category-${categoryId}`);
+  if (element && dishContent.value) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+
+// 处理滚动事件，实现左侧分类自动高亮
+const handleScroll = () => {
+  if (!dishContent.value) {
+    console.warn('dishContent.value 不存在');
+    return;
+  }
+
+  if (!Array.isArray(categorySections.value) || categorySections.value.length === 0) {
+    console.warn('categorySections.value 不是有效数组或为空');
+    return;
+  }
+
+  const scrollTop = dishContent.value.scrollTop;
+
+  // 计算当前滚动位置对应的分类
+  for (let i = 0; i < categorySections.value.length; i++) {
+    const section = categorySections.value[i];
+    if (!section) continue;
+
+    const sectionTop = section.offsetTop;
+    const sectionHeight = section.offsetHeight;
+
+    // 如果当前滚动位置在某个分类区间内
+    if (scrollTop >= sectionTop - 100 && scrollTop < sectionTop + sectionHeight - 100) {
+      const categoryId = parseInt(section.id.replace('category-', ''));
+      console.log('切换到分类:', categoryId);
+      if (activeCategory.value !== categoryId) {
+        activeCategory.value = categoryId;
+      }
+      break;
+    }
+  }
+};
+
+// 初始化分类偏移量
+const initCategoryOffsets = () => {
+  nextTick(() => {
+    // 确保 categorySections 是一个数组且有元素
+    if (Array.isArray(categorySections.value) && categorySections.value.length > 0) {
+      console.log('初始化分类偏移量, 分类数量:', categorySections.value.length);
+      categoryOffsets.value = categorySections.value.map(section => {
+        const id = parseInt(section.id.replace('category-', ''));
+        const offsetTop = section.offsetTop;
+        console.log(`分类 ${id}, offsetTop:`, offsetTop);
+        return { id, offsetTop };
+      });
+      console.log('分类偏移量初始化完成:', categoryOffsets.value);
+    } else {
+      console.warn('categorySections.value 不是一个有效的数组:', categorySections.value);
+    }
+  });
+};
+
 // 格式化距离
 const formatDistance = (distance) => {
   return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance}km`;
@@ -321,12 +524,18 @@ const formatDistance = (distance) => {
 
 onMounted(() => {
   const id = props.id;
+
+  // 先初始化默认数据（用于测试滚动功能）
+  console.log('使用默认数据进行初始化');
+  nextTick(() => {
+    initCategoryOffsets();
+    console.log('默认数据初始化完成');
+  });
+
   //根据餐厅ID加载餐厅数据
   loadResaurant(id);
   //加载菜品数据
   loadDishCategories(id);
-  console.log('1111');
-  
 });
 </script>
 
@@ -336,6 +545,7 @@ onMounted(() => {
   background: #f5f5f5;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .restaurant-header {
@@ -406,12 +616,14 @@ onMounted(() => {
   flex: 1;
   display: flex;
   overflow: hidden;
+  min-height: 0; /* 确保flex子项可以缩小 */
 }
 
 .category-sidebar {
   width: 80px;
   background: #f8f8f8;
   overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .category-item {
@@ -420,6 +632,8 @@ onMounted(() => {
   font-size: 14px;
   cursor: pointer;
   border-bottom: 1px solid #eee;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
 .category-item.active {
@@ -428,14 +642,34 @@ onMounted(() => {
   font-weight: bold;
 }
 
+.category-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 16px;
+  background: #ff6b6b;
+  border-radius: 2px;
+}
+
 .dish-content {
   flex: 1;
   overflow-y: auto;
   background: white;
+  scroll-behavior: smooth;
+  min-height: 0; /* 确保内容可以滚动 */
 }
 
 .category-section {
   padding: 16px;
+  min-height: 200px; /* 确保每个分类有足够的最小高度 */
+}
+
+.category-section:last-child {
+  padding-bottom: 32px; /* 为最后一个分类添加额外的底部内边距 */
+  min-height: 300px; /* 最后一个分类需要更多空间 */
 }
 
 .category-title {
