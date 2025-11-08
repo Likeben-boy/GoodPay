@@ -12,10 +12,11 @@
         <h2>{{ restaurant.name }}</h2>
         <div class="restaurant-meta">
           <span class="rating">⭐ {{ restaurant.rating }}</span>
-          <span class="distance">{{ formatDistance(restaurant.distance) }}</span>
         </div>
         <div class="restaurant-tags">
-          <span v-for="tag in restaurant.tags" :key="tag" class="tag">{{ tag }}</span>
+          <span v-for="tag in restaurant.tags" :key="tag" class="tag">{{
+            tag
+          }}</span>
         </div>
         <div class="delivery-info">
           <span class="delivery-fee">配送费 ¥{{ restaurant.deliveryFee }}</span>
@@ -41,7 +42,11 @@
 
       <!-- 右侧菜品列表 -->
       <div class="dish-content">
-        <div v-for="category in dishCategories" :key="category.id" class="category-section">
+        <div
+          v-for="category in dishCategories"
+          :key="category.id"
+          class="category-section"
+        >
           <h3 class="category-title">{{ category.name }}</h3>
           <div class="dish-list">
             <div
@@ -54,7 +59,7 @@
               <div class="dish-info">
                 <h4>{{ dish.name }}</h4>
                 <p class="dish-desc">{{ dish.description }}</p>
-                <div class="dish-price-actions">
+                <div class="dish-price-actions" @click.stop>
                   <span class="price">¥{{ dish.price }}</span>
                   <van-stepper
                     v-model="dish.quantity"
@@ -80,7 +85,9 @@
       </div>
       <div class="cart-info">
         <div class="cart-total">¥{{ totalPrice }}</div>
-        <div class="cart-delivery-fee">配送费 ¥{{ restaurant.deliveryFee }}</div>
+        <div class="cart-delivery-fee">
+          配送费 ¥{{ restaurant.deliveryFee }}
+        </div>
       </div>
       <div class="checkout-btn" :class="{ disabled: totalQuantity === 0 }">
         去结算
@@ -97,6 +104,7 @@
       <CartPopup
         :cart-items="cartItems"
         :delivery-fee="restaurant.deliveryFee"
+        :restaurant-id="restaurant.id"
         @add-item="addToCart"
         @remove-item="removeFromCart"
         @delete-item="deleteItem"
@@ -122,159 +130,204 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import CartPopup from '@/components/CartPopup.vue'
-import DishDetail from '@/components/DishDetail.vue'
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import CartPopup from "@/components/CartPopup.vue";
+import DishDetail from "@/components/DishDetail.vue";
+import { restaurantApi } from "@/api";
+import { useCartStore } from "@/store/cart";
+import { showToast } from 'vant';
 
-const route = useRoute()
-const router = useRouter()
+const props = defineProps({
+  id: String,
+});
+const router = useRouter();
 
-const activeCategory = ref(1)
-const showCart = ref(false)
-const showDishPopup = ref(false)
-const selectedDish = ref(null)
+// 初始化购物车 store
+const cartStore = useCartStore();
+
+const activeCategory = ref(1);
+const showCart = ref(false);
+const showDishPopup = ref(false);
+const selectedDish = ref(null);
 
 // 餐厅数据
 const restaurant = ref({
   id: 1,
-  name: '川味小厨',
-  image: '/images/restaurant1.jpg',
+  name: "川味小厨",
+  image: "/images/restaurant1.jpg",
   rating: 4.8,
-  distance: 1.2,
-  tags: ['川菜', '麻辣'],
+  tags: ["川菜", "麻辣"],
   deliveryFee: 5,
-  deliveryTime: 30
-})
+  deliveryTime: 30,
+});
+
+//获取餐厅数据接口
+const loadResaurant = async (id) => {
+  try {
+    const result = await restaurantApi.getRestaurantDetail({ id });
+
+    //把图片都加上nerURL
+    result.data.image = new URL(result.data.image, import.meta.url).href;
+    restaurant.value = result.data;
+  } catch (error) {
+    showToast(error.message || "加载餐厅查询失败，请重试");
+  }
+};
 
 // 菜品分类和菜品数据
 const dishCategories = ref([
   {
     id: 1,
-    name: '热销菜品',
+    name: "热销菜品",
     dishes: [
       {
         id: 1,
-        name: '麻婆豆腐',
-        description: '经典川菜，麻辣鲜香',
+        name: "麻婆豆腐",
+        description: "经典川菜，麻辣鲜香",
         price: 28,
-        image: '/images/dish1.jpg',
+        image: "/images/dish1.jpg",
         quantity: 0,
-        categoryId: 1
+        categoryId: 1,
       },
       {
         id: 2,
-        name: '宫保鸡丁',
-        description: '鸡肉鲜嫩，花生香脆',
+        name: "宫保鸡丁",
+        description: "鸡肉鲜嫩，花生香脆",
         price: 32,
-        image: '/images/dish2.jpg',
+        image: "/images/dish2.jpg",
         quantity: 0,
-        categoryId: 1
-      }
-    ]
+        categoryId: 1,
+      },
+    ],
   },
   {
     id: 2,
-    name: '汤品',
+    name: "汤品",
     dishes: [
       {
         id: 3,
-        name: '番茄鸡蛋汤',
-        description: '酸甜开胃，营养丰富',
+        name: "番茄鸡蛋汤",
+        description: "酸甜开胃，营养丰富",
         price: 18,
-        image: '/images/dish3.jpg',
+        image: "/images/dish3.jpg",
         quantity: 0,
-        categoryId: 2
-      }
-    ]
+        categoryId: 2,
+      },
+    ],
   },
   {
     id: 3,
-    name: '主食',
+    name: "主食",
     dishes: [
       {
         id: 4,
-        name: '蛋炒饭',
-        description: '粒粒分明，香气扑鼻',
+        name: "蛋炒饭",
+        description: "粒粒分明，香气扑鼻",
         price: 15,
-        image: '/images/dish4.jpg',
+        image: "/images/dish4.jpg",
         quantity: 0,
-        categoryId: 3
-      }
-    ]
+        categoryId: 3,
+      },
+    ],
+  },
+]);
+
+//获取菜品和分类信息接口
+const loadDishCategories = async (id) => {
+  try {
+    const result = await restaurantApi.getRestaurantCategories({ id });
+
+    //把图片都加上nerURL
+    result.data.image = new URL(result.data.image, import.meta.url).href;
+    //把图片都加上nerURL
+    dishCategories.value = result.data.categories.map((item) => {      
+      item.dishes = item.dishes.map((itemItem) => {
+        // 直接使用接口返回的路径，因为路径是正确的
+        itemItem.image = new URL(itemItem.image, import.meta.url).href;
+        itemItem.quantity = 0;
+        return itemItem;
+      });
+      return item;
+    });
+  } catch (error) {
+    showToast(error.message || "加载菜品分类查询失败，请重试");
   }
-])
+};
 
-// 购物车数据
-const cartItems = computed(() => {
-  return dishCategories.value
-    .flatMap(category => category.dishes)
-    .filter(dish => dish.quantity > 0)
-})
-
-const totalQuantity = computed(() => {
-  return cartItems.value.reduce((total, item) => total + item.quantity, 0)
-})
-
-const totalPrice = computed(() => {
-  return cartItems.value.reduce((total, item) => total + item.price * item.quantity, 0)
-})
+// 购物车数据 - 使用全局 store
+const cartItems = computed(() => cartStore.items);
+const totalQuantity = computed(() => cartStore.totalCount);
+const totalPrice = computed(() => cartStore.totalPrice);
 
 // 显示菜品详情
 const showDishDetail = (dish) => {
-  selectedDish.value = dish
-  showDishPopup.value = true
-}
+  selectedDish.value = dish;
+  showDishPopup.value = true;
+};
 
 // 添加到购物车
 const addToCart = (dish) => {
-  const dishInMenu = dishCategories.value
-    .flatMap(category => category.dishes)
-    .find(d => d.id === dish.id)
-  if (dishInMenu) {
-    dishInMenu.quantity++
-  }
-}
+  cartStore.addItem({
+    id: dish.id,
+    name: dish.name,
+    price: dish.price,
+    image: dish.image,
+    description: dish.description,
+    restaurantId: restaurant.value.id,
+    restaurantName: restaurant.value.name,
+    categoryId: dish.categoryId
+  });
+};
 
 // 从购物车移除
 const removeFromCart = (dish) => {
-  const dishInMenu = dishCategories.value
-    .flatMap(category => category.dishes)
-    .find(d => d.id === dish.id)
-  if (dishInMenu && dishInMenu.quantity > 0) {
-    dishInMenu.quantity--
+  const cartItem = cartStore.items.find(item => item.id === dish.id);
+  if (cartItem && cartItem.quantity > 1) {
+    cartStore.updateQuantity(dish.id, cartItem.quantity - 1);
+  } else {
+    cartStore.removeItem(dish.id);
   }
-}
+};
 
 // 删除菜品
 const deleteItem = (dish) => {
-  const dishInMenu = dishCategories.value
-    .flatMap(category => category.dishes)
-    .find(d => d.id === dish.id)
-  if (dishInMenu) {
-    dishInMenu.quantity = 0
-  }
-}
+  cartStore.removeItem(dish.id);
+};
 
 // 跳转到结算页面
 const goToCheckout = () => {
-  showCart.value = false
-  router.push('/order/checkout')
-}
+  showCart.value = false;
+  // 可以通过路由参数传递餐厅ID，结算页面可以从全局store获取购物车数据
+  router.push({
+    path: "/order/checkout",
+    query: {
+      restaurantId: restaurant.value.id,
+      restaurantName: restaurant.value.name,
+      deliveryFee: restaurant.value.deliveryFee
+    }
+  });
+};
 
 // 返回上一页
 const goBack = () => {
-  router.back()
-}
+  router.back();
+};
 
 // 格式化距离
 const formatDistance = (distance) => {
-  return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance}km`
-}
+  return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance}km`;
+};
 
 onMounted(() => {
-  // TODO: 根据餐厅ID加载餐厅数据和菜品数据
-})
+  const id = props.id;
+  //根据餐厅ID加载餐厅数据
+  loadResaurant(id);
+  //加载菜品数据
+  loadDishCategories(id);
+  console.log('1111');
+  
+});
 </script>
 
 <style scoped>
@@ -284,7 +337,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
 }
-
 
 .restaurant-header {
   background: white;

@@ -19,11 +19,11 @@
       <div class="address-section" @click="selectAddress">
         <div class="address-info">
           <div class="address-header">
-            <span class="contact">{{ address.name }} {{ address.phone }}</span>
+            <span class="contact">{{ address.contactName }} {{ address.contactPhone }}</span>
             <span class="address-tag" v-if="address.isDefault">默认</span>
           </div>
           <div class="address-detail">
-            {{ address.address }}
+            {{ personalAddress }}
           </div>
         </div>
         <van-icon name="arrow" />
@@ -115,10 +115,40 @@
 
     <!-- 配送时间选择器 -->
     <van-popup v-model:show="showTimePicker" position="bottom" round>
-      <van-picker
-        :columns="deliveryTimeOptions"
-        @confirm="onTimeConfirm"
-        @cancel="showTimePicker = false"
+      <div class="time-picker-header">
+        <div class="picker-title">选择配送时间</div>
+        <van-icon name="cross" @click="showTimePicker = false" />
+      </div>
+      <div class="time-options">
+        <div
+          v-for="(option, index) in deliveryTimeOptions"
+          :key="index"
+          class="time-option"
+          :class="{ active: selectedDeliveryTime === option.text }"
+          @click="selectDeliveryTime(option)"
+        >
+          <div class="time-text">{{ option.text }}</div>
+          <van-icon
+            name="success"
+            v-if="selectedDeliveryTime === option.text"
+            color="#ff6b6b"
+          />
+        </div>
+      </div>
+    </van-popup>
+
+    <!-- 地址选择弹窗 -->
+    <van-popup
+      v-model:show="showAddressSelect"
+      position="bottom"
+      :style="{ height: '70%' }"
+      round
+    >
+      <AddressSelectPopup
+        :show="showAddressSelect"
+        :current-address-id="address.id"
+        @update:show="showAddressSelect = $event"
+        @select="onAddressSelect"
       />
     </van-popup>
   </div>
@@ -126,64 +156,112 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { useCartStore } from '@/store/cart'
+import { restaurantApi } from '@/api'
+import { addressApi } from '@/api/address'
+import { showToast } from 'vant'
+import AddressSelectPopup from '@/components/AddressSelectPopup.vue'
 
 const router = useRouter()
+const route = useRoute()
+
+// 初始化购物车 store
+const cartStore = useCartStore()
 
 const showTimePicker = ref(false)
+const showAddressSelect = ref(false)
 const selectedPayment = ref('wechat')
 const orderNote = ref('')
 
 // 餐厅信息
 const restaurant = ref({
-  id: 1,
-  name: '川味小厨',
-  image: '/images/restaurant1.jpg',
-  deliveryFee: 5,
-  deliveryTime: 30
+  id: null,
+  name: '',
+  image: '',
+  deliveryFee: 0,
+  deliveryTime: 0
 })
 
 // 收货地址
 const address = ref({
-  id: 1,
-  name: '张三',
-  phone: '138****8888',
-  address: '北京市朝阳区某某街道某某小区1号楼1单元101室',
-  isDefault: true
+  id: null,
+  contactName: '',
+  contactPhone: '',
+  province: '',
+  city:'',
+  district:'',
+  detailAddress:'',
+  isDefault: false
 })
 
-// 订单商品（从购物车传递过来的数据）
-const orderItems = ref([
-  {
-    id: 1,
-    name: '麻婆豆腐',
-    image: '/images/dish1.jpg',
-    price: 28,
-    quantity: 2,
-    selectedSpec: ''
-  },
-  {
-    id: 2,
-    name: '宫保鸡丁',
-    image: '/images/dish2.jpg',
-    price: 32,
-    quantity: 1,
-    selectedSpec: '微辣'
-  }
-])
 
-// 配送时间选项
-const deliveryTimeOptions = ref([
-  '立即送达',
-  '30分钟后送达',
-  '45分钟后送达',
-  '1小时后送达',
-  '18:00-18:30送达',
-  '18:30-19:00送达',
-  '19:00-19:30送达'
-])
+// 订单商品 - 从购物车store获取
+const orderItems = computed(() => cartStore.items)
 
+// 配送时间选项 - 动态生成
+const deliveryTimeOptions = ref([])
 const selectedDeliveryTime = ref('立即送达')
+
+// 生成配送时间选项
+const generateDeliveryTimeOptions = () => {
+  const options = []
+  const now = new Date()
+
+  // 添加立即送达选项（如果营业时间内）
+  const currentHour = now.getHours()
+  if (currentHour >= 8 && currentHour < 22) {
+    options.push({
+      text: '立即送达',
+      value: 'immediate',
+      time: now.getTime()
+    })
+  }
+
+  // 生成30分钟间隔的时间段选项
+  const startTime = new Date(now.getTime() + 30 * 60 * 1000) // 30分钟后
+  startTime.setMinutes(Math.ceil(startTime.getMinutes() / 30) * 30) // 向上取整到最近的30分钟
+
+  const endTime = new Date(now)
+  endTime.setHours(22, 0, 0, 0) // 营业结束时间22:00
+
+  const currentTime = new Date(startTime)
+
+  while (currentTime < endTime) {
+    const nextTime = new Date(currentTime.getTime() + 30 * 60 * 1000)
+
+    const timeStr = formatTimeRange(currentTime, nextTime)
+    options.push({
+      text: timeStr,
+      value: `${formatTime(currentTime)}-${formatTime(nextTime)}`,
+      time: currentTime.getTime()
+    })
+
+    currentTime.setTime(nextTime.getTime())
+  }
+
+  return options
+}
+
+// 格式化单个时间
+const formatTime = (date) => {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+// 格式化时间范围
+const formatTimeRange = (startTime, endTime) => {
+  return `${formatTime(startTime)}-${formatTime(endTime)}送达`
+}
+
+// 初始化配送时间选项
+const initDeliveryTimeOptions = () => {
+  deliveryTimeOptions.value = generateDeliveryTimeOptions()
+
+  // 默认选择第一个可用时间
+  if (deliveryTimeOptions.value.length > 0) {
+    selectedDeliveryTime.value = deliveryTimeOptions.value[0].text
+  }
+}
 
 // 支付方式
 const paymentMethods = ref([
@@ -194,47 +272,119 @@ const paymentMethods = ref([
 
 // 计算费用
 const subtotal = computed(() => {
-  return orderItems.value.reduce((total, item) => total + item.price * item.quantity, 0)
+  return cartStore.totalPrice
 })
 
 const total = computed(() => {
-  return subtotal.value + restaurant.value.deliveryFee
+  return cartStore.totalPrice + restaurant.value.deliveryFee
 })
 
 // 选择收货地址
 const selectAddress = () => {
-  showToast('选择收货地址')
-  // TODO: 跳转到地址选择页面
+  showAddressSelect.value = true
 }
 
-// 确认配送时间
-const onTimeConfirm = ({ selectedValues }) => {
-  selectedDeliveryTime.value = selectedValues[0]
+// 地址选择后的处理
+const onAddressSelect = (selectedAddr) => {
+  address.value = selectedAddr
+  showToast('已选择收货地址')
+}
+
+// 选择配送时间
+const selectDeliveryTime = (option) => {
+  selectedDeliveryTime.value = option.text
   showTimePicker.value = false
 }
 
 // 提交订单
 const submitOrder = () => {
+  if (!address.value.id) {
+    showToast('请选择收货地址')
+    return
+  }
+
+  if (cartStore.items.length === 0) {
+    showToast('购物车为空，请添加商品')
+    return
+  }
+
   const orderData = {
     restaurantId: restaurant.value.id,
     addressId: address.value.id,
-    items: orderItems.value,
+    items: cartStore.items,
     paymentMethod: selectedPayment.value,
     deliveryTime: selectedDeliveryTime.value,
     note: orderNote.value,
-    subtotal: subtotal.value,
+    subtotal: cartStore.totalPrice,
     deliveryFee: restaurant.value.deliveryFee,
-    total: total.value
+    total: cartStore.totalPrice + restaurant.value.deliveryFee
   }
 
   showToast('订单提交成功！')
   console.log('提交订单数据:', orderData)
 
   // TODO: 调用后端API提交订单
+  // 清空购物车
+  cartStore.clearCart()
+
   // 跳转到订单详情页面
   setTimeout(() => {
     router.push('/order/success')
   }, 1500)
+}
+
+// 加载餐厅信息
+const loadRestaurant = async (restaurantId) => {
+  try {
+    const result = await restaurantApi.getRestaurantDetail({ id: restaurantId })
+    // 把图片都加上nerURL
+    result.data.image = new URL(result.data.image, import.meta.url).href
+    restaurant.value = result.data
+  } catch (error) {
+    showToast(error.message || '加载餐厅信息失败，请重试')
+    // 使用路由参数作为备用
+    restaurant.value = {
+      id: restaurantId,
+      name: route.query.restaurantName || '餐厅',
+      image: '/images/restaurant-default.jpg',
+      deliveryFee: Number(route.query.deliveryFee) || 5,
+      deliveryTime: 30
+    }
+  }
+}
+
+// 格式化地址显示
+const formatAddress = (addr) => {
+  if (!addr.province && !addr.city && !addr.district && !addr.detailAddress) {
+    return '请选择收货地址'
+  }
+  return `${addr.province || ''}${addr.city || ''}${addr.district || ''}${addr.detailAddress || ''}`
+}
+
+// 计算属性：完整的地址字符串
+const personalAddress = computed(() => formatAddress(address.value))
+
+// 加载默认收货地址
+const loadDefaultAddress = async () => {
+  try {
+    // TODO: 调用默认收货地址接口
+    const result = await addressApi.getDefaultAddress()
+    address.value = result.data
+  } catch (error) {
+    console.error('加载默认收货地址失败:', error)
+    // 临时使用默认数据，按照实际返回格式
+    address.value = {
+      id: 5,
+      contactName: '李四',
+      contactPhone: '18088312002',
+      province: '天津市',
+      city: '天津市',
+      district: '和平区',
+      detailAddress: '和平小区116号',
+      isDefault: true,
+      userId: 1
+    }
+  }
 }
 
 // 返回上一页
@@ -242,8 +392,29 @@ const goBack = () => {
   router.back()
 }
 
-onMounted(() => {
-  // TODO: 从路由参数获取订单数据
+onMounted(async () => {
+  // 初始化配送时间选项
+  initDeliveryTimeOptions()
+
+  const restaurantId = route.query.restaurantId
+  if (restaurantId) {
+    await loadRestaurant(restaurantId)
+  } else {
+    showToast('缺少餐厅信息')
+    router.back()
+    return
+  }
+
+  // 加载默认收货地址
+  await loadDefaultAddress()
+
+  // 检查购物车是否有商品
+  if (cartStore.items.length === 0) {
+    showToast('购物车为空，请先添加商品')
+    setTimeout(() => {
+      router.back()
+    }, 1500)
+  }
 })
 </script>
 
@@ -478,5 +649,63 @@ onMounted(() => {
 
 .submit-btn:hover {
   background: #ff5252;
+}
+
+/* 配送时间选择器样式 */
+.time-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: white;
+  border-bottom: 1px solid #eee;
+}
+
+.picker-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.time-picker-header .van-icon {
+  font-size: 20px;
+  color: #666;
+  cursor: pointer;
+}
+
+.time-options {
+  max-height: 300px;
+  overflow-y: auto;
+  background: #f5f5f5;
+}
+
+.time-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  margin: 8px 16px;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.time-option:hover {
+  background: #fafafa;
+}
+
+.time-option.active {
+  border: 1px solid #ff6b6b;
+  background: #fff5f5;
+}
+
+.time-text {
+  font-size: 16px;
+  color: #333;
+}
+
+.time-option .van-icon {
+  font-size: 20px;
+  flex-shrink: 0;
 }
 </style>

@@ -89,6 +89,11 @@ const goBack = () => {
   router.back();
 };
 
+// 跳转到餐厅详情
+const goToRestaurant = (restaurantId) => {
+  router.push(`/restaurant/${restaurantId}`)
+}
+
 //加载热门餐厅
 const loadResaurants = async (operation) => {
   try {

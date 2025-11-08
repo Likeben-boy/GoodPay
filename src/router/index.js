@@ -14,6 +14,7 @@ const routes = [
     path: '/restaurant/:id',
     name: 'RestaurantDetail',
     component: () => import('@/views/restaurant/RestaurantView.vue'),
+    props:true,
     meta: {
       title: '餐厅详情'
     }

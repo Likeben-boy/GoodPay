@@ -8,10 +8,10 @@ export const restaurantApi = {
   getRestaurantTag: (params) => request.get('/restaurants/tags',params),
 
   // 获取餐厅详情
-  getRestaurantDetail: (id) => request.get(`/restaurants/${id}`),
+  getRestaurantDetail: (id) => request.get('/restaurants/id',id),
 
   // 获取餐厅菜品分类
-  getRestaurantCategories: (restaurantId) => request.get(`/restaurants/${restaurantId}/categories`),
+  getRestaurantCategories: (id) => request.get('/restaurants/menu',id),
 
   // 获取餐厅菜品列表
   getRestaurantDishes: (restaurantId, params) => request.get(`/restaurants/${restaurantId}/dishes`, params),

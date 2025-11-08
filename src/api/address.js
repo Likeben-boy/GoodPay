@@ -12,4 +12,7 @@ export const addressApi = {
 
   // 删除地址
   deleteAddress: (addressId) => request.delete(`/users/addresses/${addressId}`),
+
+  //获取用户默认地址
+  getDefaultAddress: () => request.get('/users/addresses/default'),
 }
