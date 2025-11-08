@@ -83,15 +83,15 @@
     <!-- 购物车固定栏 -->
     <div class="cart-bar" @click="showCart = true">
       <div class="cart-icon">
-        <van-icon name="cart-o" :badge="totalQuantity" />
+        <van-icon name="cart-o" :badge="currentRestaurantTotalQuantity" />
       </div>
       <div class="cart-info">
-        <div class="cart-total">¥{{ totalPrice }}</div>
+        <div class="cart-total">¥{{ currentRestaurantTotalPrice }}</div>
         <div class="cart-delivery-fee">
           配送费 ¥{{ restaurant.deliveryFee }}
         </div>
       </div>
-      <div class="checkout-btn" :class="{ disabled: totalQuantity === 0 }">
+      <div class="checkout-btn" :class="{ disabled: currentRestaurantTotalQuantity === 0 }">
         去结算
       </div>
     </div>
@@ -132,7 +132,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, nextTick, watch, reactive } from "vue";
 import { useRouter } from "vue-router";
 import CartPopup from "@/components/CartPopup.vue";
 import DishDetail from "@/components/DishDetail.vue";
@@ -158,6 +158,16 @@ const dishContent = ref(null);
 const categorySections = ref([]);
 const categoryOffsets = ref([]);
 
+// 滚动状态管理
+const scrollState = reactive({
+  isScrolling: false,
+  currentScrollTop: 0,
+});
+
+// 滚动节流处理
+let scrollTimer = null;
+const THROTTLE_DELAY = 16; // 约60fps
+
 // 餐厅数据
 const restaurant = ref({
   id: 1,
@@ -169,7 +179,8 @@ const restaurant = ref({
   deliveryTime: 30,
 });
 
-//获取餐厅数据接口
+
+//getting餐厅数据接口
 const loadResaurant = async (id) => {
   try {
     const result = await restaurantApi.getRestaurantDetail({ id });
@@ -375,11 +386,33 @@ const cartItems = computed(() => cartStore.items);
 const totalQuantity = computed(() => cartStore.totalCount);
 const totalPrice = computed(() => cartStore.totalPrice);
 
+// 当前餐厅的购物车数据
+const currentRestaurantCartItems = computed(() =>
+  cartStore.items.filter(item => item.restaurantId === restaurant.value.id)
+);
+const currentRestaurantTotalQuantity = computed(() =>
+  currentRestaurantCartItems.value.reduce((sum, item) => sum + item.quantity, 0)
+);
+const currentRestaurantTotalPrice = computed(() =>
+  currentRestaurantCartItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
+);
+
+// 检查是否有跨餐厅商品
+const hasCrossRestaurantItems = computed(() =>
+  cartStore.items.some(item => item.restaurantId !== restaurant.value.id)
+);
+
+
 // 监听购物车变化，同步更新商品页面的数量
 watch(cartItems, (newCartItems) => {
+  // 只处理当前餐厅的商品
+  const currentRestaurantItems = newCartItems.filter(item =>
+    item.restaurantId === restaurant.value.id
+  );
+
   dishCategories.value.forEach(category => {
     category.dishes.forEach(dish => {
-      const cartItem = newCartItems.find(item => item.id === dish.id);
+      const cartItem = currentRestaurantItems.find(item => item.id === dish.id);
       if (cartItem) {
         dish.quantity = cartItem.quantity;
       } else {
@@ -395,9 +428,28 @@ const showDishDetail = (dish) => {
   showDishPopup.value = true;
 };
 
+
+// 同步更新所有菜品数量的工具函数
+const syncAllDishQuantities = () => {
+  const currentRestaurantItems = cartStore.items.filter(item =>
+    item.restaurantId === restaurant.value.id
+  );
+
+  dishCategories.value.forEach(category => {
+    category.dishes.forEach(dish => {
+      const cartItem = currentRestaurantItems.find(item => item.id === dish.id);
+      if (cartItem) {
+        dish.quantity = cartItem.quantity;
+      } else {
+        dish.quantity = 0;
+      }
+    });
+  });
+};
+
 // 添加到购物车
 const addToCart = (dish) => {
-  cartStore.addItem({
+  const product = {
     id: dish.id,
     name: dish.name,
     price: dish.price,
@@ -406,34 +458,45 @@ const addToCart = (dish) => {
     restaurantId: restaurant.value.id,
     restaurantName: restaurant.value.name,
     categoryId: dish.categoryId
-  });
+  };
 
-  // 同步更新商品页面的数量显示
-  const cartItem = cartStore.items.find(item => item.id === dish.id);
-  if (cartItem) {
-    dish.quantity = cartItem.quantity;
-  }
+  // 直接添加商品，购物车操作限制在单个店铺内
+  cartStore.addItem(product);
+
+  // 强制同步所有菜品数量
+  nextTick(() => {
+    syncAllDishQuantities();
+  });
 };
 
 // 从购物车移除
 const removeFromCart = (dish) => {
   const cartItem = cartStore.items.find(item => item.id === dish.id);
   if (cartItem && cartItem.quantity > 1) {
+    // 更新购物车中的数量
     cartStore.updateQuantity(dish.id, cartItem.quantity - 1);
-    // 同步更新商品页面的数量显示
-    dish.quantity = cartItem.quantity - 1;
-  } else {
+  } else if (cartItem) {
+    // 移除商品
     cartStore.removeItem(dish.id);
-    // 同步更新商品页面的数量显示
-    dish.quantity = 0;
   }
+
+  // 强制同步所有菜品数量
+  nextTick(() => {
+    syncAllDishQuantities();
+  });
 };
 
 // 删除菜品
 const deleteItem = (dish) => {
-  cartStore.removeItem(dish.id);
-  // 同步更新商品页面的数量显示
-  dish.quantity = 0;
+  const cartItem = cartStore.items.find(item => item.id === dish.id);
+  if (cartItem) {
+    cartStore.removeItem(dish.id);
+  }
+
+  // 强制同步所有菜品数量
+  nextTick(() => {
+    syncAllDishQuantities();
+  });
 };
 
 // 跳转到结算页面
@@ -455,43 +518,66 @@ const goBack = () => {
   router.back();
 };
 
+// 查找分类区域的工具函数
+const findCategorySection = (categoryId) => {
+  return categorySections.value.find(section =>
+    section.id === `category-${categoryId}`
+  );
+};
+
 // 滚动到指定分类
 const scrollToCategory = (categoryId) => {
   activeCategory.value = categoryId;
-  const element = document.getElementById(`category-${categoryId}`);
-  if (element && dishContent.value) {
-    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // 使用Vue的ref替代getElementById
+  const targetSection = findCategorySection(categoryId);
+
+  if (targetSection && dishContent.value) {
+    // 直接使用DOM元素的scrollIntoView方法
+    targetSection.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
   }
 };
 
-// 处理滚动事件，实现左侧分类自动高亮
+// 节流处理的滚动事件
 const handleScroll = () => {
-  if (!dishContent.value) {
-    console.warn('dishContent.value 不存在');
-    return;
-  }
+  if (scrollTimer) return;
 
-  if (!Array.isArray(categorySections.value) || categorySections.value.length === 0) {
-    console.warn('categorySections.value 不是有效数组或为空');
-    return;
-  }
+  // 更新滚动状态
+  scrollState.isScrolling = true;
+  scrollState.currentScrollTop = dishContent.value?.scrollTop || 0;
 
-  const scrollTop = dishContent.value.scrollTop;
+  scrollTimer = setTimeout(() => {
+    scrollTimer = null;
+    scrollState.isScrolling = false;
+    performScrollCheck();
+  }, THROTTLE_DELAY);
+};
 
-  // 计算当前滚动位置对应的分类
-  for (let i = 0; i < categorySections.value.length; i++) {
+// 执行实际的滚动检查逻辑
+const performScrollCheck = () => {
+  if (!dishContent.value || !categorySections.value?.length) return;
+
+  // 使用缓存的滚动位置，避免重复的DOM查询
+  const scrollTop = scrollState.currentScrollTop;
+
+  // 使用预计算的偏移量来提高性能
+  for (let i = 0; i < categoryOffsets.value.length; i++) {
+    const offsetData = categoryOffsets.value[i];
     const section = categorySections.value[i];
+
     if (!section) continue;
 
-    const sectionTop = section.offsetTop;
     const sectionHeight = section.offsetHeight;
 
     // 如果当前滚动位置在某个分类区间内
-    if (scrollTop >= sectionTop - 100 && scrollTop < sectionTop + sectionHeight - 100) {
-      const categoryId = parseInt(section.id.replace('category-', ''));
-      console.log('切换到分类:', categoryId);
-      if (activeCategory.value !== categoryId) {
-        activeCategory.value = categoryId;
+    if (scrollTop >= offsetData.offsetTop - 100 &&
+        scrollTop < offsetData.offsetTop + sectionHeight - 100) {
+
+      if (activeCategory.value !== offsetData.id) {
+        activeCategory.value = offsetData.id;
       }
       break;
     }
@@ -522,8 +608,24 @@ const formatDistance = (distance) => {
   return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance}km`;
 };
 
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  if (scrollTimer) {
+    clearTimeout(scrollTimer);
+    scrollTimer = null;
+  }
+});
+
 onMounted(() => {
   const id = props.id;
+
+  // 调试购物车store方法
+  console.log('购物车store方法检查:');
+  console.log('items:', cartStore.items);
+  console.log('addItem方法:', typeof cartStore.addItem);
+  console.log('clearCart方法:', typeof cartStore.clearCart);
+  console.log('updateQuantity方法:', typeof cartStore.updateQuantity);
+  console.log('removeItem方法:', typeof cartStore.removeItem);
 
   // 先初始化默认数据（用于测试滚动功能）
   console.log('使用默认数据进行初始化');

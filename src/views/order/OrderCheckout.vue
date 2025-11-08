@@ -196,8 +196,10 @@ const address = ref({
 })
 
 
-// 订单商品 - 从购物车store获取
-const orderItems = computed(() => cartStore.items)
+// 订单商品 - 从购物车store获取，只显示当前餐厅的商品
+const orderItems = computed(() => {
+  return cartStore.items.filter(item => item.restaurantId === restaurant.value.id)
+})
 
 // 配送时间选项 - 动态生成
 const deliveryTimeOptions = ref([])
@@ -274,13 +276,13 @@ const paymentMethods = ref([
   { id: 'apple', name: 'Apple Pay', icon: 'apple', color: '#000000' }
 ])
 
-// 计算费用
+// 计算费用 - 只计算当前餐厅商品
 const subtotal = computed(() => {
-  return cartStore.totalPrice
+  return orderItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
 })
 
 const total = computed(() => {
-  return cartStore.totalPrice + restaurant.value.deliveryFee
+  return subtotal.value + restaurant.value.deliveryFee
 })
 
 // 选择收货地址
@@ -316,7 +318,7 @@ const submitOrder = () => {
     return
   }
 
-  if (cartStore.items.length === 0) {
+  if (orderItems.value.length === 0) {
     showToast('购物车为空，请添加商品')
     return
   }
@@ -324,13 +326,13 @@ const submitOrder = () => {
   const orderData = {
     restaurantId: restaurant.value.id,
     addressId: address.value.id,
-    items: cartStore.items,
+    items: orderItems.value,
     paymentMethod: selectedPayment.value,
     deliveryTime: deliveryTimeParam.value,
     note: orderNote.value,
-    subtotal: cartStore.totalPrice,
+    subtotal: subtotal.value,
     deliveryFee: restaurant.value.deliveryFee,
-    total: cartStore.totalPrice + restaurant.value.deliveryFee
+    total: total.value
   }
 
   showToast('订单提交成功！')
@@ -422,7 +424,7 @@ onMounted(async () => {
   await loadDefaultAddress()
 
   // 检查购物车是否有商品
-  if (cartStore.items.length === 0) {
+  if (orderItems.value.length === 0) {
     showToast('购物车为空，请先添加商品')
     setTimeout(() => {
       router.back()

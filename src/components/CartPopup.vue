@@ -3,21 +3,22 @@
     <div class="cart-header">
       <h3>购物车</h3>
       <div class="cart-actions">
-        <span class="clear-cart" @click="clearCart">清空购物车</span>
+        <span class="clear-cart" @click="clearCart">清空当前</span>
         <div class="close-btn" @click="$emit('update:show', false)">
           <van-icon name="cross" />
         </div>
       </div>
     </div>
 
+    
     <div class="cart-content">
-      <div v-if="cartItems.length === 0" class="empty-cart">
+      <div v-if="currentRestaurantItems.length === 0" class="empty-cart">
         <van-icon name="cart-o" size="48" color="#ddd" />
         <p>购物车是空的</p>
       </div>
 
       <div v-else class="cart-items">
-        <div v-for="item in cartItems" :key="item.id" class="cart-item">
+        <div v-for="item in currentRestaurantItems" :key="item.id" class="cart-item">
           <img :src="item.image" :alt="item.name" class="item-image" />
           <div class="item-info">
             <h4>{{ item.name }}</h4>
@@ -81,13 +82,23 @@ const props = defineProps({
   deliveryFee: {
     type: Number,
     default: 0
+  },
+  restaurantId: {
+    type: Number,
+    required: true
   }
 })
 
-const emit = defineEmits(['add-item', 'remove-item', 'delete-item', 'checkout'])
+const emit = defineEmits(['add-item', 'remove-item', 'delete-item', 'checkout', 'update:show'])
+
+// 当前餐厅的商品（用于显示）
+const currentRestaurantItems = computed(() => {
+  return props.cartItems.filter(item => item.restaurantId === props.restaurantId)
+})
+
 
 const subtotal = computed(() => {
-  return props.cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
+  return currentRestaurantItems.value.reduce((total, item) => total + item.price * item.quantity, 0)
 })
 
 const total = computed(() => {
@@ -95,12 +106,12 @@ const total = computed(() => {
 })
 
 const totalQuantity = computed(() => {
-  return props.cartItems.reduce((total, item) => total + item.quantity, 0)
+  return currentRestaurantItems.value.reduce((total, item) => total + item.quantity, 0)
 })
 
 const clearCart = () => {
-  if (confirm('确定要清空购物车吗？')) {
-    props.cartItems.forEach(item => emit('delete-item', item))
+  if (confirm('确定要清空当前餐厅的商品吗？')) {
+    currentRestaurantItems.value.forEach(item => emit('delete-item', item))
   }
 }
 </script>
@@ -142,6 +153,7 @@ const clearCart = () => {
   cursor: pointer;
   color: #666;
 }
+
 
 .cart-content {
   flex: 1;

@@ -23,6 +23,7 @@ export const useCartStore = defineStore('cart', () => {
     saveToLocalStorage()
   }
 
+  
   // 更新商品数量
   const updateQuantity = (productId, quantity) => {
     const item = items.value.find(item => item.id === productId)
@@ -42,10 +43,31 @@ export const useCartStore = defineStore('cart', () => {
     saveToLocalStorage()
   }
 
+  // 清空指定餐厅的商品
+  const clearRestaurantItems = (restaurantId) => {
+    items.value = items.value.filter(item => item.restaurantId !== restaurantId)
+    saveToLocalStorage()
+  }
+
   // 清空购物车
   const clearCart = () => {
     items.value = []
     saveToLocalStorage()
+  }
+
+  // 检查是否包含指定餐厅的商品
+  const hasRestaurantItems = (restaurantId) => {
+    return items.value.some(item => item.restaurantId === restaurantId)
+  }
+
+  // 检查是否包含其他餐厅的商品
+  const hasOtherRestaurantItems = (restaurantId) => {
+    return items.value.some(item => item.restaurantId !== restaurantId)
+  }
+
+  // 获取指定餐厅的商品
+  const getRestaurantItems = (restaurantId) => {
+    return items.value.filter(item => item.restaurantId === restaurantId)
   }
 
   // 保存到本地存储
@@ -60,6 +82,10 @@ export const useCartStore = defineStore('cart', () => {
     addItem,
     updateQuantity,
     removeItem,
-    clearCart
+    clearRestaurantItems,
+    clearCart,
+    hasRestaurantItems,
+    hasOtherRestaurantItems,
+    getRestaurantItems
   }
 })
