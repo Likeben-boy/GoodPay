@@ -154,7 +154,6 @@ class HttpRequest {
                 break;
 
               default:
-                console.log('是否进入4',errorData.code);
                 error = new HttpError(
                   errorData.code,
                   errorData.message ||

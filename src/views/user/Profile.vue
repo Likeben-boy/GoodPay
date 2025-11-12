@@ -109,6 +109,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
+import { orderApi } from '@/api'
 
 const router = useRouter()
 const userStore = useUserStore();
@@ -118,11 +119,30 @@ const userInfo = ref(userStore.userInfo)
 
 // 订单统计
 const orderStats = ref({
-  total: 15,
-  pending: 2,
-  processing: 1,
-  completed: 12
+  total: 0,
+  pending: 0,
+  processing: 0,
+  completed: 0
 })
+
+// 获取订单统计数据
+const fetchOrderStats = async () => {
+  try {
+    const response = await orderApi.userTotalOrder()
+    if (response.data) {
+      const stats = response.data
+      orderStats.value = {
+        total: stats.totalOrders || 0,
+        pending: stats.pendingPaymentOrders || 0,
+        processing: stats.deliveringOrders || 0,
+        completed: stats.completedOrders || 0
+      }
+    }
+  } catch (error) {
+    console.error('获取订单统计失败:', error)
+    showToast('获取订单统计失败')
+  }
+}
 
 // 优惠券数量
 const couponCount = ref(3)
@@ -208,6 +228,8 @@ const logout = () => {
 }
 
 onMounted(() => {
+  // 获取订单统计数据
+  fetchOrderStats()
   // TODO: 加载用户信息
 })
 </script>

@@ -619,14 +619,6 @@ onUnmounted(() => {
 onMounted(() => {
   const id = props.id;
 
-  // 调试购物车store方法
-  console.log('购物车store方法检查:');
-  console.log('items:', cartStore.items);
-  console.log('addItem方法:', typeof cartStore.addItem);
-  console.log('clearCart方法:', typeof cartStore.clearCart);
-  console.log('updateQuantity方法:', typeof cartStore.updateQuantity);
-  console.log('removeItem方法:', typeof cartStore.removeItem);
-
   // 先初始化默认数据（用于测试滚动功能）
   console.log('使用默认数据进行初始化');
   nextTick(() => {

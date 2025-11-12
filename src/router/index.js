@@ -79,6 +79,27 @@ const routes = [
     }
   },
   {
+    path: '/order/processing',
+    name: 'OrderProcessing',
+    component: () => import('@/views/order/OrderProcessing.vue'),
+        props: (route) => ({
+      operation: {
+        //标签
+        orderId: route.query.orderId,
+
+        //评分最小值
+        orderNumber: route.query.orderNumber,
+
+        //搜索关键字
+        paymentMethod: route.query.paymentMethod,
+      }
+    }),
+    meta: {
+      title: '订单处理中',
+      requireAuth: true
+    }
+  },
+  {
     path: '/order/success',
     name: 'OrderSuccess',
     component: () => import('@/views/order/OrderSuccess.vue'),

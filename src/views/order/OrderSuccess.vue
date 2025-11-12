@@ -18,7 +18,7 @@
         </div>
         <div class="info-item">
           <span class="label">预计送达时间</span>
-          <span class="value">{{ estimatedDeliveryTime }}</span>
+          <span class="value">{{ formatDeliveryTime(estimatedDeliveryTime) }}</span>
         </div>
         <div class="info-item">
           <span class="label">实付金额</span>
@@ -40,7 +40,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute,useRouter } from 'vue-router'
+import { orderApi } from '@/api'
+
+const route = useRoute()
 
 const router = useRouter()
 
@@ -48,25 +51,57 @@ const orderNumber = ref('')
 const estimatedDeliveryTime = ref('')
 const totalAmount = ref(0)
 
-onMounted(() => {
-  // 生成订单号
-  orderNumber.value = 'GP' + Date.now()
+// 格式化时间显示
+const formatDeliveryTime = (isoString) => {
+  if (!isoString) return ''
 
-  // 计算预计送达时间（当前时间 + 30分钟）
+  const date = new Date(isoString)
   const now = new Date()
-  now.setMinutes(now.getMinutes() + 30)
-  estimatedDeliveryTime.value = now.toLocaleTimeString('zh-CN', {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+  // 格式化时间为 HH:mm
+  const timeStr = date.toLocaleTimeString('zh-CN', {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: false
   })
 
-  // 从路由参数或状态管理获取订单金额
-  // 这里使用默认值
-  totalAmount.value = 93
+  // 判断是今天、明天还是其他日期
+  if (dateOnly.getTime() === today.getTime()) {
+    return `今天 ${timeStr}`
+  } else if (dateOnly.getTime() === tomorrow.getTime()) {
+    return `明天 ${timeStr}`
+  } else {
+    // 其他日期显示月日
+    const monthDayStr = date.toLocaleDateString('zh-CN', {
+      month: 'numeric',
+      day: 'numeric'
+    })
+    return `${monthDayStr} ${timeStr}`
+  }
+}
+
+onMounted(async() => {
+  // 查询订单生成对应字段
+    // 根据订单ID加载订单详情
+    console.log(route.query);
+    
+  try {
+    const response = await orderApi.getOrderDetail(route.query.orderId)
+      orderNumber.value = response.data.order.orderNumber
+      totalAmount.value = response.data.order.totalAmount
+      estimatedDeliveryTime.value = response.data.order.estimatedDeliveryTime
+    
+  } catch (error) {
+    console.error('获取订单详情失败:', error)
+  }
 })
 
 const viewOrderDetail = () => {
-  router.push(`/order/${orderNumber.value}`)
+  router.push(`/order/${route.query.orderId}`)
 }
 
 const goHome = () => {

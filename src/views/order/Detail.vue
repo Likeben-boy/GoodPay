@@ -6,10 +6,10 @@
     <!-- 订单状态 -->
     <div class="order-status-section">
       <div class="status-icon">
-        <van-icon :name="getStatusIcon(order.status)" size="48" :color="getStatusColor(order.status)" />
+        <van-icon :name="getStatusIcon(order.orderStatus)" size="48" :color="getStatusColor(order.orderStatus)" />
       </div>
-      <h3>{{ getStatusText(order.status) }}</h3>
-      <p v-if="order.status === 'processing'">预计 {{ order.estimatedDeliveryTime }} 送达</p>
+      <h3>{{ getStatusText(order.orderStatus) }}</h3>
+      <p v-if="order.orderStatus === 'delivering'">预计 {{ formatEstimatedTime(order.estimatedDeliveryTime) }} 送达</p>
     </div>
 
     <!-- 配送信息 -->
@@ -28,7 +28,6 @@
 
     <!-- 餐厅信息 -->
     <div class="restaurant-info">
-      <img :src="order.restaurantImage" :alt="order.restaurantName" class="restaurant-image" />
       <div class="restaurant-details">
         <h4>{{ order.restaurantName }}</h4>
         <p>订单号：{{ order.orderNumber }}</p>
@@ -38,12 +37,12 @@
     <!-- 订单商品 -->
     <div class="order-items">
       <h4>订单商品</h4>
-      <div v-for="item in order.items" :key="item.id" class="order-item">
-        <img :src="item.image" :alt="item.name" class="item-image" />
+      <div v-for="item in order.orderItems" :key="item.id" class="order-item">
+        <img :src="item.dishImage" :alt="item.dishName" class="item-image" />
         <div class="item-info">
-          <span class="item-name">{{ item.name }}</span>
+          <span class="item-name">{{ item.dishName }}</span>
           <div class="item-price-quantity">
-            <span class="item-price">¥{{ item.price }}</span>
+            <span class="item-price">¥{{ item.dishPrice }}</span>
             <span class="item-quantity">x{{ item.quantity }}</span>
           </div>
         </div>
@@ -58,15 +57,15 @@
       </div>
       <div class="info-item">
         <span>支付方式</span>
-        <span>{{ order.paymentMethod }}</span>
+        <span>{{ getPaymentMethodText(order.paymentMethod) }}</span>
       </div>
       <div class="info-item">
         <span>配送费</span>
         <span>¥{{ order.deliveryFee }}</span>
       </div>
-      <div class="info-item">
+      <div v-if="order.discountAmount && order.discountAmount > 0" class="info-item">
         <span>优惠金额</span>
-        <span class="discount">-¥{{ order.discount }}</span>
+        <span class="discount">-¥{{ order.discountAmount }}</span>
       </div>
     </div>
 
@@ -80,20 +79,20 @@
         <span>配送费</span>
         <span>¥{{ order.deliveryFee }}</span>
       </div>
-      <div class="summary-item">
+      <div v-if="order.discountAmount && order.discountAmount > 0" class="summary-item">
         <span>优惠</span>
-        <span class="discount">-¥{{ order.discount }}</span>
+        <span class="discount">-¥{{ order.discountAmount }}</span>
       </div>
       <div class="summary-total">
         <span>实付金额</span>
-        <span class="total-amount">¥{{ order.total }}</span>
+        <span class="total-amount">¥{{ order.totalAmount }}</span>
       </div>
     </div>
 
     <!-- 底部操作 -->
     <div class="bottom-actions">
       <van-button
-        v-if="order.status === 'pending'"
+        v-if="order.orderStatus === 'created'"
         type="primary"
         block
         @click="goToPayment"
@@ -101,7 +100,7 @@
         去支付
       </van-button>
       <van-button
-        v-if="order.status === 'processing'"
+        v-if="order.orderStatus === 'confirmed' || order.orderStatus === 'preparing' || order.orderStatus === 'cancelled'"
         type="default"
         block
         @click="contactRestaurant"
@@ -109,13 +108,22 @@
         联系商家
       </van-button>
       <van-button
-        v-if="order.status === 'completed'"
+        v-if="order.orderStatus === 'delivering'"
         type="primary"
         block
-        @click="rateOrder"
+        @click="confirmReceipt"
       >
-        评价订单
+        确认收货
       </van-button>
+      <van-button
+        v-if="order.orderStatus === 'completed'"
+        type="default"
+        block
+        @click="requestRefund"
+      >
+        申请退款
+      </van-button>
+      <!-- cancelled 状态不显示任何按钮 -->
     </div>
   </div>
 </template>
@@ -123,6 +131,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { orderApi } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -165,9 +174,12 @@ const order = ref({
 // 获取状态图标
 const getStatusIcon = (status) => {
   const iconMap = {
-    pending: 'clock-o',
-    processing: 'logistics',
-    completed: 'success'
+    created: 'clock-o',         // 已创建 - 等待图标
+    confirmed: 'passed',        // 已确认 - 对勾图标
+    preparing: 'fire',          // 制作中 - 火焰图标
+    delivering: 'logistics',    // 配送中 - 物流图标
+    completed: 'success',       // 已完成 - 成功图标
+    cancelled: 'cross'          // 已取消 - 叉号图标
   }
   return iconMap[status] || 'orders-o'
 }
@@ -175,9 +187,12 @@ const getStatusIcon = (status) => {
 // 获取状态颜色
 const getStatusColor = (status) => {
   const colorMap = {
-    pending: '#ff976a',
-    processing: '#1989fa',
-    completed: '#07c160'
+    created: '#ff976a',      // 橙色 - 等待支付
+    confirmed: '#1989fa',    // 蓝色 - 已确认
+    preparing: '#ff6b35',    // 深橙色 - 制作中
+    delivering: '#07c160',   // 绿色 - 配送中
+    completed: '#07c160',    // 绿色 - 已完成
+    cancelled: '#ee0a24'     // 红色 - 已取消
   }
   return colorMap[status] || '#969799'
 }
@@ -185,9 +200,12 @@ const getStatusColor = (status) => {
 // 获取状态文本
 const getStatusText = (status) => {
   const statusMap = {
-    pending: '等待支付',
-    processing: '配送中',
-    completed: '已完成'
+    created: '等待支付',
+    confirmed: '订单已确认',
+    preparing: '制作中',
+    delivering: '配送中',
+    completed: '已完成',
+    cancelled: '已取消'
   }
   return statusMap[status] || status
 }
@@ -198,14 +216,39 @@ const formatTime = (time) => {
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`
 }
 
-// 返回
+// 格式化预计送达时间
+const formatEstimatedTime = (time) => {
+  if (!time) return ''
+  const date = new Date(time)
+  return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`
+}
+
+// 获取支付方式文本
+const getPaymentMethodText = (method) => {
+  const methodMap = {
+    'wechat': '微信支付',
+    'alipay': '支付宝',
+    'balance': '余额支付'
+  }
+  return methodMap[method] || method
+}
+
+// 该页面固定返回订单列表返回
 const goBack = () => {
-  router.back()
+  router.push('/order')
 }
 
 // 跳转到支付页面
 const goToPayment = () => {
-  router.push(`/payment/${order.value.id}`)
+    // 跳转到订单处理中页面
+  router.push({
+    path: "/order/processing",
+    query: {
+      orderId: order.value.id,
+      orderNumber: order.value.orderNumber,
+      paymentMethod: order.value.paymentMethod,
+    },
+  });
 }
 
 // 联系商家
@@ -213,13 +256,35 @@ const contactRestaurant = () => {
   showToast('功能开发中...')
 }
 
-// 评价订单
-const rateOrder = () => {
+// 确认收货
+const confirmReceipt = async() => {
+  showToast('确认收货成功')
+  console.log(order);
+  
+  // 调用api
+  await orderApi.confirmOrder(order.value.id);
+  loadOrder();
+}
+
+// 申请退款
+const requestRefund = () => {
   showToast('功能开发中...')
 }
 
-onMounted(() => {
-  // TODO: 根据订单ID加载订单详情
+const loadOrder = async() =>{
+    // 根据订单ID加载订单详情
+  try {
+    const response = await orderApi.getOrderDetail(Number(route.params.id))
+    if (response.status === 'success') {
+      order.value = response.data.order
+    }
+  } catch (error) {
+    console.error('获取订单详情失败:', error)
+  }
+}
+
+onMounted(async () => {
+loadOrder()
 })
 </script>
 
@@ -282,19 +347,9 @@ onMounted(() => {
 }
 
 .restaurant-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   background: #ffffff;
   padding: 16px;
   margin-bottom: 12px;
-}
-
-.restaurant-image {
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
-  object-fit: cover;
 }
 
 .restaurant-details h4 {

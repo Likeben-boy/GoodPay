@@ -124,8 +124,11 @@
           v-for="(option, index) in deliveryTimeOptions"
           :key="index"
           class="time-option"
-          :class="{ active: selectedDeliveryTime === option.text }"
-          @click="selectDeliveryTime(option)"
+          :class="{
+            active: selectedDeliveryTime === option.text,
+            disabled: option.disabled
+          }"
+          @click="!option.disabled && selectDeliveryTime(option)"
         >
           <div class="time-text">{{ option.text }}</div>
           <van-icon
@@ -141,7 +144,6 @@
     <van-popup
       v-model:show="showAddressSelect"
       position="bottom"
-      :style="{ height: '70%' }"
       round
     >
       <AddressSelectPopup
@@ -158,9 +160,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCartStore } from '@/store/cart'
-import { restaurantApi } from '@/api'
+import { orderApi, restaurantApi } from '@/api'
 import { addressApi } from '@/api/address'
-import { showToast } from 'vant'
 import AddressSelectPopup from '@/components/AddressSelectPopup.vue'
 
 const router = useRouter()
@@ -171,7 +172,7 @@ const cartStore = useCartStore()
 
 const showTimePicker = ref(false)
 const showAddressSelect = ref(false)
-const selectedPayment = ref('wechat')
+const selectedPayment = ref('balance')
 const orderNote = ref('')
 
 // 餐厅信息
@@ -211,15 +212,12 @@ const generateDeliveryTimeOptions = () => {
   const options = []
   const now = new Date()
 
-  // 添加立即送达选项（如果营业时间内）
-  const currentHour = now.getHours()
-  if (currentHour >= 8 && currentHour < 22) {
-    options.push({
-      text: '立即送达',
-      value: 'immediate',
-      time: now.getTime()
-    })
-  }
+  // 始终添加立即送达选项作为第一项
+  options.push({
+    text: '立即送达',
+    value: 'immediate',
+    time: now.getTime()
+  })
 
   // 生成30分钟间隔的时间段选项
   const startTime = new Date(now.getTime() + 30 * 60 * 1000) // 30分钟后
@@ -260,20 +258,16 @@ const formatTimeRange = (startTime, endTime) => {
 const initDeliveryTimeOptions = () => {
   deliveryTimeOptions.value = generateDeliveryTimeOptions()
 
-  // 默认选择第一个可用时间
-  if (deliveryTimeOptions.value.length > 0) {
-    selectedDeliveryTime.value = deliveryTimeOptions.value[0].text
-    deliveryTimeParam.value = deliveryTimeOptions.value[0].value === 'immediate'
-      ? '立即送达'
-      : deliveryTimeOptions.value[0].value.split('-')[1]
-  }
+  // 默认选择立即送达
+  selectedDeliveryTime.value = '立即送达'
+  deliveryTimeParam.value = '立即送达'
 }
 
 // 支付方式
 const paymentMethods = ref([
   { id: 'wechat', name: '微信支付', icon: 'wechat', color: '#07c160' },
   { id: 'alipay', name: '支付宝', icon: 'alipay', color: '#1677ff' },
-  { id: 'apple', name: 'Apple Pay', icon: 'apple', color: '#000000' }
+  { id: 'balance', name: '余额支付(挡板)', icon: 'cash-on-deliver', color: '#000000' }
 ])
 
 // 计算费用 - 只计算当前餐厅商品
@@ -298,6 +292,11 @@ const onAddressSelect = (selectedAddr) => {
 
 // 选择配送时间
 const selectDeliveryTime = (option) => {
+  // 如果选项被禁用，不处理选择
+  if (option.disabled) {
+    return
+  }
+
   selectedDeliveryTime.value = option.text
   showTimePicker.value = false
 
@@ -311,8 +310,19 @@ const selectDeliveryTime = (option) => {
   }
 }
 
+// 调用下订单api
+const createOrder = async (orderData) => {
+  try {
+    const result = await orderApi.createOrder(orderData)
+    // 把图片都加上nerURL
+    return result.data;
+  } catch (error) {
+    showToast(error.message || '下单失败')
+  }
+}
+
 // 提交订单
-const submitOrder = () => {
+const submitOrder = async () => {
   if (!address.value.id) {
     showToast('请选择收货地址')
     return
@@ -336,16 +346,23 @@ const submitOrder = () => {
   }
 
   showToast('订单提交成功！')
-  console.log('提交订单数据:', JSON.stringify(orderData))
 
-  // TODO: 调用后端API提交订单
-  // 清空购物车
-  // cartStore.clearCart()
+  // 调用后端API提交订单
+  const result = await createOrder(orderData);
 
-  // 跳转到订单详情页面
-  // setTimeout(() => {
-  //   router.push('/order/success')
-  // }, 1500)
+      // 清空购物车
+  cartStore.clearCart()
+
+  // 跳转到订单处理中页面
+  router.push({
+    path: '/order/processing',
+    query: {
+      orderId: result.orderId,
+      orderNumber: result.orderNumber,
+      paymentMethod: result.paymentMethod
+    }
+  })
+
 }
 
 // 加载餐厅信息
@@ -387,18 +404,7 @@ const loadDefaultAddress = async () => {
     address.value = result.data
   } catch (error) {
     console.error('加载默认收货地址失败:', error)
-    // 临时使用默认数据，按照实际返回格式
-    address.value = {
-      id: 5,
-      contactName: '李四',
-      contactPhone: '18088312002',
-      province: '天津市',
-      city: '天津市',
-      district: '和平区',
-      detailAddress: '和平小区116号',
-      isDefault: true,
-      userId: 1
-    }
+    showFailToast('加载地址失败')
   }
 }
 
@@ -430,6 +436,7 @@ onMounted(async () => {
       router.back()
     }, 1500)
   }
+  
 })
 </script>
 
@@ -715,13 +722,28 @@ onMounted(async () => {
   background: #fff5f5;
 }
 
+.time-option.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background: #f5f5f5;
+}
+
+.time-option.disabled:hover {
+  background: #f5f5f5;
+}
+
 .time-text {
   font-size: 16px;
   color: #333;
+}
+
+.time-option.disabled .time-text {
+  color: #999;
 }
 
 .time-option .van-icon {
   font-size: 20px;
   flex-shrink: 0;
 }
+
 </style>
