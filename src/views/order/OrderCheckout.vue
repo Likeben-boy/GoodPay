@@ -369,8 +369,6 @@ const submitOrder = async () => {
 const loadRestaurant = async (restaurantId) => {
   try {
     const result = await restaurantApi.getRestaurantDetail({ id: restaurantId })
-    // 把图片都加上nerURL
-    result.data.image = new URL(result.data.image, import.meta.url).href
     restaurant.value = result.data
   } catch (error) {
     showToast(error.message || '加载餐厅信息失败，请重试')

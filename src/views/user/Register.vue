@@ -150,8 +150,8 @@ const onRegister = async () => {
       password: registerForm.password
     })
       showSuccessToast('注册成功')
-      userStore.saveUser(result);
-      router.replace('/')
+      // userStore.saveUser(result);
+      // router.replace('/')
   } catch (error) {
     showToast(error.message ||'注册失败，请重试')
   }

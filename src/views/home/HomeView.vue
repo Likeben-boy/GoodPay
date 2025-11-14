@@ -14,7 +14,13 @@
       <van-swipe-item v-for="(banner, index) in banners" :key="index">
         <img :src="banner.image" :alt="banner.title" />
       </van-swipe-item>
-    </van-swipe>
+    </van-swipe>    
+    
+    <!-- <van-swipe class="banner" :autoplay="3000" indicator-color="white">
+      <van-swipe-item v-for="(banner, index) in banners" :key="index">
+        <img :src="getImageUrl(banner.image)" :alt="banner.title" />
+      </van-swipe-item>
+    </van-swipe> -->
 
     <!-- 分类导航 -->
     <van-grid class="categories" :column-num="4" :border="false">
@@ -72,44 +78,16 @@ const searchKeyword = ref('')
 
 // 轮播图数据
 const banners = ref([
-  { id: 1, image: new URL('@/assets/images/banner1.jpg', import.meta.url).href, title: '新用户专享优惠' },
-  { id: 2, image: new URL('@/assets/images/banner2.webp', import.meta.url).href, title: '限时折扣活动' },
- { id: 3, image: new URL('@/assets/images/banner3.jpg', import.meta.url).href, title: '热门餐厅推荐' }
+   { id: 1, image: '/images/banner1.jpg', title: '新用户专享优惠' },
+  { id: 2, image: '/images/banner2.webp', title: '限时折扣活动' },
+ { id: 3, image: '/images/banner3.jpg', title: '热门餐厅推荐' }
 ])
 
 // 分类数据
 const categories = ref(RESTAURANT_CATEGORIES)
 
 // 餐厅数据
-const restaurants = ref([
-  {
-    id: 1,
-    name: '川味小厨',
-    image: new URL('@/assets/images/restaurant1.jpg', import.meta.url).href,
-    rating: 4.8,
-    tags: ['川菜', '麻辣'],
-    deliveryFee: 5,
-    deliveryTime: 30
-  },
-  {
-    id: 2,
-    name: '粤式茶餐厅',
-    image: new URL('@/assets/images/restaurant2.jpg', import.meta.url).href,
-    rating: 4.6,
-    tags: ['粤菜', '茶餐厅'],
-    deliveryFee: 3,
-    deliveryTime: 25
-  },
-  {
-    id: 3,
-    name: '日式料理',
-    image: new URL('@/assets/images/restaurant3.jpg', import.meta.url).href,
-    rating: 4.9,
-    tags: ['日料', '寿司'],
-    deliveryFee: 8,
-    deliveryTime: 40
-  }
-])
+const restaurants = ref([])
   //分页
 const pageInfo = {
   page:1,
@@ -171,14 +149,7 @@ const loadTags = async () =>{
 const loadHotResaurants = async () =>{
       try {
       const result = await restaurantApi.getRestaurantList({minRating:4, ...pageInfo})
-
-      //把图片都加上nerURL
-      restaurants.value = result.data.map((item)=>{
-        item.image = new URL(item.image,import.meta.url).href
-        return item
-      })
-      console.log(restaurants.value,'kankan');
-      
+      restaurants.value = result.data;
       
   } catch (error) {
     showToast(error.message || "加载热门餐厅查询失败，请重试");

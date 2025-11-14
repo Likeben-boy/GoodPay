@@ -266,9 +266,104 @@ const confirmReceipt = async() => {
   loadOrder();
 }
 
+// 通用弹框输入理由方法
+const showReasonDialog = async (options) => {
+  const {
+    reasonPlaceholder,
+    reasonTitle,
+    successMessage,
+    errorMessage,
+    apiCall,
+  } = options;
+
+  // 清理之前可能存在的输入框
+  const cleanupExistingInputs = () => {
+    // 移除所有自定义创建的输入框容器
+    const customInputs = document.querySelectorAll('.custom-dialog-input');
+    customInputs.forEach(input => input.remove());
+
+    // 恢复被隐藏的 message 元素
+    const messageEls = document.querySelectorAll('.van-dialog__message');
+    messageEls.forEach(el => {
+      if (el.style.display === 'none') {
+        el.style.display = '';
+      }
+    });
+  };
+
+  // 使用 prompt 弹框让用户输入理由
+  const reason = await new Promise((resolve) => {
+    // 清理旧的输入框
+    cleanupExistingInputs();
+
+    showDialog({
+      title: reasonTitle,
+      message: reasonPlaceholder,
+      showCancelButton: true,
+      confirmButtonText: "确认",
+      cancelButtonText: "取消",
+      closeOnPopstate: false,
+      closeOnClickOverlay: false,
+    })
+      .then(() => {
+        // 用户点击确认，获取输入值
+        setTimeout(() => {
+          const input = document.querySelector('.custom-dialog-input .van-dialog__input');
+          resolve(input ? input.value.trim() : '');
+        }, 100);
+      })
+      .catch(() => {
+        // 用户点击取消
+        resolve('');
+      })
+      .finally(() => {
+        // 弹框关闭后清理输入框
+        setTimeout(cleanupExistingInputs, 200);
+      });
+
+    // 创建输入框
+    setTimeout(() => {
+      const messageEl = document.querySelector('.van-dialog__message');
+      if (messageEl) {
+        messageEl.style.display = 'none';
+        const inputContainer = document.createElement('div');
+        inputContainer.className = 'custom-dialog-input';
+        inputContainer.innerHTML = `
+          <input type="text"
+                 class="van-dialog__input"
+                 placeholder="${reasonPlaceholder}"
+                 style="width: 100%; padding: 8px; border: 1px solid #eee; border-radius: 4px; margin-top: 8px; box-sizing: border-box;">
+        `;
+        messageEl.parentNode.insertBefore(inputContainer, messageEl.nextSibling);
+        inputContainer.querySelector('.van-dialog__input').focus();
+      }
+    }, 100);
+  });
+
+  // 如果用户没有输入理由或取消，直接返回
+  if (!reason) {
+    return;
+  }
+
+  try {
+    await apiCall(reason);
+    showToast(successMessage);
+    // 刷新订单列表
+    await loadOrder();
+  } catch (error) {
+    showToast(error.message || errorMessage);
+  }
+};
+
 // 申请退款
 const requestRefund = () => {
-  showToast('功能开发中...')
+    showReasonDialog({
+    reasonPlaceholder: "请输入退款理由",
+    reasonTitle: "退款理由",
+    successMessage: "订单已提交退款申请",
+    errorMessage: "申请退款失败，请重试",
+    apiCall: (reason) => orderApi.requestRefund(Number(route.params.id), reason),
+  });
 }
 
 const loadOrder = async() =>{

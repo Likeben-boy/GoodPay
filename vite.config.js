@@ -24,6 +24,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  base: '/goodPay/', // 配置子路径部署
   server: {
     proxy: {
       '/api': {

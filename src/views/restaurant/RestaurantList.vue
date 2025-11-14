@@ -99,11 +99,7 @@ const loadResaurants = async (operation) => {
   try {
     const result = await restaurantApi.getRestaurantList(operation);
 
-    //把图片都加上nerURL
-    restaurants.value = result.data.map((item) => {
-      item.image = new URL(item.image, import.meta.url).href;
-      return item;
-    });
+    restaurants.value = result.data;
   } catch (error) {
     showToast(error.message || "加载热门餐厅查询失败，请重试");
   }

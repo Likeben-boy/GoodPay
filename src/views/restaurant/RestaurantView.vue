@@ -171,9 +171,9 @@ const THROTTLE_DELAY = 16; // 约60fps
 // 餐厅数据
 const restaurant = ref({
   id: 1,
-  name: "川味小厨",
-  image: "/images/restaurant1.jpg",
-  rating: 4.8,
+  name: "",
+  image: "",
+  rating: 1,
   tags: ["川菜", "麻辣"],
   deliveryFee: 5,
   deliveryTime: 30,
@@ -186,7 +186,6 @@ const loadResaurant = async (id) => {
     const result = await restaurantApi.getRestaurantDetail({ id });
 
     //把图片都加上nerURL
-    result.data.image = new URL(result.data.image, import.meta.url).href;
     restaurant.value = result.data;
   } catch (error) {
     showToast(error.message || "加载餐厅查询失败，请重试");
@@ -194,137 +193,7 @@ const loadResaurant = async (id) => {
 };
 
 // 菜品分类和菜品数据
-const dishCategories = ref([
-  {
-    id: 1,
-    name: "热销菜品",
-    dishes: [
-      {
-        id: 1,
-        name: "麻婆豆腐",
-        description: "经典川菜，麻辣鲜香",
-        price: 28,
-        image: "/images/dish1.jpg",
-        quantity: 0,
-        categoryId: 1,
-      },
-      {
-        id: 2,
-        name: "宫保鸡丁",
-        description: "鸡肉鲜嫩，花生香脆",
-        price: 32,
-        image: "/images/dish2.jpg",
-        quantity: 0,
-        categoryId: 1,
-      },
-      {
-        id: 5,
-        name: "水煮鱼",
-        description: "麻辣鲜香，鱼肉嫩滑",
-        price: 58,
-        image: "/images/dish5.jpg",
-        quantity: 0,
-        categoryId: 1,
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "凉菜",
-    dishes: [
-      {
-        id: 6,
-        name: "凉拌黄瓜",
-        description: "清爽开胃，酸甜可口",
-        price: 12,
-        image: "/images/dish6.jpg",
-        quantity: 0,
-        categoryId: 2,
-      },
-      {
-        id: 7,
-        name: "口水鸡",
-        description: "麻辣鲜香，口感丰富",
-        price: 28,
-        image: "/images/dish7.jpg",
-        quantity: 0,
-        categoryId: 2,
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: "汤品",
-    dishes: [
-      {
-        id: 3,
-        name: "番茄鸡蛋汤",
-        description: "酸甜开胃，营养丰富",
-        price: 18,
-        image: "/images/dish3.jpg",
-        quantity: 0,
-        categoryId: 3,
-      },
-      {
-        id: 8,
-        name: "冬瓜排骨汤",
-        description: "清淡营养，排骨鲜嫩",
-        price: 32,
-        image: "/images/dish8.jpg",
-        quantity: 0,
-        categoryId: 3,
-      },
-    ],
-  },
-  {
-    id: 4,
-    name: "主食",
-    dishes: [
-      {
-        id: 4,
-        name: "蛋炒饭",
-        description: "粒粒分明，香气扑鼻",
-        price: 15,
-        image: "/images/dish4.jpg",
-        quantity: 0,
-        categoryId: 4,
-      },
-      {
-        id: 9,
-        name: "牛肉面",
-        description: "汤头浓郁，牛肉鲜嫩",
-        price: 25,
-        image: "/images/dish9.jpg",
-        quantity: 0,
-        categoryId: 4,
-      },
-    ],
-  },
-  {
-    id: 5,
-    name: "饮料",
-    dishes: [
-      {
-        id: 10,
-        name: "酸梅汤",
-        description: "酸甜解腻，生津止渴",
-        price: 8,
-        image: "/images/dish10.jpg",
-        quantity: 0,
-        categoryId: 5,
-      },
-      {
-        id: 11,
-        name: "可乐",
-        description: "经典碳酸饮料",
-        price: 6,
-        image: "/images/dish11.jpg",
-        quantity: 0,
-        categoryId: 5,
-      },
-    ],
-  },
-]);
+const dishCategories = ref([]);
 
 //获取菜品和分类信息接口
 const loadDishCategories = async (id) => {
@@ -333,15 +202,10 @@ const loadDishCategories = async (id) => {
 
     console.log('API返回的数据结构:', result);
 
-    //把图片都加上nerURL
-    result.data.image = new URL(result.data.image, import.meta.url).href;
-    //把图片都加上nerURL
+  
     dishCategories.value = result.data.categories.map((item) => {
       item.dishes = item.dishes.map((itemItem) => {
         // 直接使用接口返回的路径，因为路径是正确的
-        itemItem.image = new URL(itemItem.image, import.meta.url).href;
-
-        // 根据购物车中的实际数量设置菜品数量，而不是重置为0
         const cartItem = cartStore.items.find(cartItem => cartItem.id === itemItem.id);
         itemItem.quantity = cartItem ? cartItem.quantity : 0;
 
@@ -601,11 +465,6 @@ const initCategoryOffsets = () => {
       console.warn('categorySections.value 不是一个有效的数组:', categorySections.value);
     }
   });
-};
-
-// 格式化距离
-const formatDistance = (distance) => {
-  return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance}km`;
 };
 
 // 组件卸载时清理定时器
