@@ -345,6 +345,11 @@ const submitOrder = async () => {
     total: total.value
   }
 
+  if(orderData.paymentMethod != 'balance'){
+      showToast('目前只支持用挡板支付')
+      return;
+  }
+
   showToast('订单提交成功！')
 
   // 调用后端API提交订单
